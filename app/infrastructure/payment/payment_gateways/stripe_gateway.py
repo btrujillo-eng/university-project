@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -25,70 +26,81 @@ from app.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+
 class StripeGateway(IPaymentGateway):
-    """
-    This is a Stripe payment gateway.
-    
-    It is responsible for payment processing and returning the payment details. Any 
-    class that implement this payment gateway can define the 'process_payment' method.
-    """
+    """Gateway for Stripe card charges."""
+
     def __init__(self, api_key: str):
         self.api_key = api_key
-        
+
     async def process_payment(self, payment_data: PaymentDataRequest) -> PaymentResponse:
-        """
-        It's responsible for processing a payment and returning the payment details.
-        """
         stripe.api_key = self.api_key
         amount = to_stripe_amount(payment_data.transaction_amount)
         if not isinstance(payment_data.payment_method, CardPaymentDataRequest):
-            logger.critical("The payment method must b  e 'tarjeta'")
+            logger.critical("The payment method must be 'tarjeta'")
             raise StripePaymentMethodError("The payment method must be 'tarjeta'")
-        
-        source = get_processing_network(payment_data.payment_method.card_number.get_secret_value())
+
+        card_number = payment_data.payment_method.card_number.get_secret_value()
+        source = get_processing_network(card_number)
         if not source:
-            raise StripeNetworkNotSupportError("The entered processing network has no support")
-        
-        # NOTE: In a real production environment the codig lines between 36 and 38 must be removed.
-        # Because the token must be assigned from the front-end by Stripe.js.
-        tok_source = STRIPE_TRIAL_TOKENS.get(source)
-        if not tok_source:
-            raise StripeTokenConfigurationError("The processing network exists, but it does not have an assigned token")
-        
+            raise StripeNetworkNotSupportError(
+                "The entered processing network has no support"
+            )
+
+        # Demo tokens must be replaced with Stripe.js tokenization in production.
+        token_source = STRIPE_TRIAL_TOKENS.get(source)
+        if not token_source:
+            raise StripeTokenConfigurationError(
+                "The processing network exists, but it does not have an assigned token"
+            )
+
         try:
-            charge = stripe.Charge.create(
+            # The Stripe SDK call is synchronous. Run it in a worker thread so it
+            # does not block FastAPI's event loop while waiting for the network.
+            charge = await asyncio.to_thread(
+                stripe.Charge.create,
                 amount=amount,
                 currency=payment_data.currency.value,
-                source=tok_source,
-                description=f"Charge for {payment_data.user_data.first_name} {payment_data.user_data.first_surname}"
+                source=token_source,
+                description=(
+                    f"Charge for {payment_data.user_data.first_name} "
+                    f"{payment_data.user_data.first_surname}"
+                ),
             )
-            logger.info(f"Payment processed successfully| Transaction id: {charge["id"]}")
+            charge_status = charge["status"]
             return PaymentResponse(
                 currency=charge["currency"],
-                transaction_amount=Decimal(charge["amount"] / 100),
+                transaction_amount=Decimal(charge["amount"]) / Decimal("100"),
                 transaction_id=charge["id"],
-                payment_status=charge["status"],
-                message="Pago exitoso" if charge["status"] == 'succeeded' else 'Pago fallido',
+                payment_status=charge_status,
+                message="Pago exitoso" if charge_status == "succeeded" else "Pago fallido",
                 created_at=datetime.fromtimestamp(charge["created"], tz=UTC),
                 payment_method=CardPaymentResponse(
                     method=PaymentMethods.CARD,
                     processing_network=source,
-                    last_digits=payment_data.payment_method.card_number.get_secret_value()[-4:]
-                )
+                    last_digits=card_number[-4:],
+                ),
             )
-             
-        except StripeError as e:
-            logger.critical(f"The transaction failed for {payment_data.user_data.first_name} | Error: {e}", stack_info=True)
+        except StripeError as exc:
+            logger.error(
+                "Stripe transaction failed for user %s: %s",
+                payment_data.user_data.first_name,
+                exc,
+                exc_info=True,
+            )
             return PaymentResponse(
                 currency=payment_data.currency,
                 transaction_amount=payment_data.transaction_amount,
                 transaction_id=str(uuid4()),
                 payment_status="failed",
-                message="Estamos teniendo problemas para procesar el pago. Por favor intenta nuevamente",
+                message=(
+                    "Estamos teniendo problemas para procesar el pago. "
+                    "Por favor intenta nuevamente"
+                ),
                 created_at=datetime.now(tz=UTC),
                 payment_method=CardPaymentResponse(
                     method=PaymentMethods.CARD,
                     processing_network=source,
-                    last_digits=payment_data.payment_method.card_number.get_secret_value()[:4]
-                )
+                    last_digits=card_number[-4:],
+                ),
             )
