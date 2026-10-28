@@ -1,4 +1,13 @@
-from .order import CashPaymentUpdateRequest, OrderItemResponse, OrderResponse
+from .order import (
+    CashPaymentUpdateRequest,
+    CheckoutItemRequest,
+    CheckoutRequest,
+    CheckoutResponse,
+    DigitalReceiptResponse,
+    OrderItemResponse,
+    OrderResponse,
+    ShippingAddressRequest,
+)
 from .payment import (
     CardPaymentDataRequest,
     CardPaymentResponse,
@@ -26,8 +35,12 @@ __all__ = [
     "CardPaymentResponse",
     "CashPaymentDataRequest",
     "CashPaymentUpdateRequest",
+    "CheckoutItemRequest",
+    "CheckoutRequest",
+    "CheckoutResponse",
     "CreateRestoreCodeRequest",
     "CreateRestoreCodeResponse",
+    "DigitalReceiptResponse",
     "OrderItemResponse",
     "OrderResponse",
     "PaymentDataRequest",
@@ -36,6 +49,7 @@ __all__ = [
     "ProductPriceUpdateRequest",
     "ProductResponse",
     "ProductStockUpdateRequest",
+    "ShippingAddressRequest",
     "Token",
     "TokenData",
     "UpdatePasswordRequest",

@@ -1,9 +1,39 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus
+from app.api.schemas.payment import PaymentMethodRequest, PaymentResponse
+from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, UnitOfMeasure
+
+
+class CheckoutItemRequest(BaseModel):
+    product_id: int = Field(gt=0)
+    quantity: int = Field(gt=0, le=1000)
+
+
+class ShippingAddressRequest(BaseModel):
+    street: str = Field(min_length=4, max_length=80)
+    details: str = Field(min_length=1, max_length=120)
+    city: str = Field(min_length=2, max_length=60)
+    phone_number: str = Field(pattern=r"^\\d{10}$")
+
+
+class CheckoutRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: Annotated[list[CheckoutItemRequest], Field(min_length=1, max_length=100)]
+    shipping: ShippingAddressRequest
+    payment_method: PaymentMethodRequest
+    discount_type: str = "no_aplica"
+
+    @model_validator(mode="after")
+    def reject_duplicate_products(self):
+        product_ids = [item.product_id for item in self.items]
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError("No se puede incluir un producto más de una vez; ajusta su cantidad")
+        return self
 
 
 class OrderItemResponse(BaseModel):
@@ -29,3 +59,18 @@ class OrderResponse(BaseModel):
 
 class CashPaymentUpdateRequest(BaseModel):
     payment_status: PaymentStatus
+
+
+class DigitalReceiptResponse(BaseModel):
+    receipt_number: str
+    order_id: int
+    issued_at: datetime
+    total_paid: Decimal
+    currency: str = "COP"
+    items: list[OrderItemResponse]
+
+
+class CheckoutResponse(BaseModel):
+    order: OrderResponse
+    payment: PaymentResponse
+    receipt: DigitalReceiptResponse | None = None

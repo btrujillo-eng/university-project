@@ -1,19 +1,37 @@
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.order import CashPaymentUpdateRequest, OrderItemResponse, OrderResponse
+from app.api.dependencies.payment import get_process_payment
+from app.api.schemas.order import (
+    CashPaymentUpdateRequest,
+    CheckoutRequest,
+    CheckoutResponse,
+    DigitalReceiptResponse,
+    OrderItemResponse,
+    OrderResponse,
+)
+from app.api.schemas.payment import PaymentDataRequest
+from app.api.schemas.user import ContactInfoRequest, UserDataRequest
 from app.api.v1.routers.user_auth import get_current_user
-from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, UserRole
+from app.application import ProcessPaymentUseCase
+from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
 from app.domain.ports.order_repository import IOrderRepository
+from app.exceptions import ProductDoesNotExistError
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
+from app.infrastructure.persistence.models import Product, User
+from app.infrastructure.persistence.models.order_items import OrderItem
 from app.infrastructure.persistence.models.orders import Order
 from app.infrastructure.persistence.repositories.postgresql.order import OrderRepository
 
 router = APIRouter(prefix="/orders", tags=["orders"])
+MINIMUM_ORDER_AMOUNT = Decimal("20000.00")
 
 
 async def get_order_session() -> AsyncIterator[AsyncSession]:
@@ -46,6 +64,125 @@ def _to_response(order: Order) -> OrderResponse:
             for item in order.order_items
         ],
     )
+
+
+@router.post("/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
+async def checkout(
+    data: CheckoutRequest,
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+    payment_use_case: Annotated[ProcessPaymentUseCase, Depends(get_process_payment)],
+) -> CheckoutResponse:
+    _require_role(user, UserRole.CUSTOMER)
+    account = await session.get(User, user.user_id)
+    if account is None:
+        raise HTTPException(status_code=401, detail="La cuenta autenticada ya no existe")
+
+    quantities = {item.product_id: item.quantity for item in data.items}
+    statement = (
+        select(Product)
+        .where(Product.id.in_(quantities))
+        .order_by(Product.id)
+        .with_for_update()
+    )
+    products = list((await session.scalars(statement)).all())
+    products_by_id = {product.id: product for product in products}
+    missing_ids = set(quantities) - set(products_by_id)
+    if missing_ids:
+        await session.rollback()
+        raise HTTPException(status_code=404, detail={"products_not_found": sorted(missing_ids)})
+
+    for product_id, quantity in quantities.items():
+        if products_by_id[product_id].stock < quantity:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Stock insuficiente para el producto {product_id}",
+            )
+
+    subtotal = sum(
+        (products_by_id[product_id].price * quantity for product_id, quantity in quantities.items()),
+        start=Decimal("0.00"),
+    )
+    if subtotal < MINIMUM_ORDER_AMOUNT:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"El pedido mínimo es de COP {MINIMUM_ORDER_AMOUNT:.2f}",
+        )
+
+    user_data = UserDataRequest(
+        first_name=account.first_name,
+        middle_name=account.middle_name,
+        first_surname=account.first_surname,
+        middle_surname=account.middle_surname,
+        contact_info=ContactInfoRequest(
+            email=account.email,
+            phone_number=data.shipping.phone_number,
+        ),
+    )
+    payment_data = PaymentDataRequest(
+        user_data=user_data,
+        currency=TypeCurrency.COP,
+        discount_type=data.discount_type,
+        transaction_amount=subtotal,
+        payment_method=data.payment_method,
+    )
+    try:
+        payment = await payment_use_case.process(payment_data)
+    except Exception:
+        await session.rollback()
+        raise
+
+    if data.payment_method.method == PaymentMethods.CARD and payment.payment_status != "succeeded":
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail={"message": payment.message or "El pago fue rechazado", "transaction_id": payment.transaction_id},
+        )
+
+    persisted_payment_status = (
+        PaymentStatus.PENDING
+        if data.payment_method.method == PaymentMethods.CASH
+        else PaymentStatus(payment.payment_status)
+    )
+    order = Order(
+        user_id=user.user_id,
+        total_price=payment.transaction_amount,
+        delivery_status=DeliveryStatus.PENDING,
+        payment_method=data.payment_method.method,
+        payment_status=persisted_payment_status,
+        shipping_street=data.shipping.street,
+        shipping_details=data.shipping.details,
+        shipping_city=data.shipping.city,
+        phone_number=data.shipping.phone_number,
+    )
+    session.add(order)
+    await session.flush()
+    for product_id, quantity in quantities.items():
+        product = products_by_id[product_id]
+        product.stock -= quantity
+        order.order_items.append(
+            OrderItem(
+                product=product,
+                product_id=product.id,
+                unit_price=product.price,
+                quantity=quantity,
+            )
+        )
+    await session.commit()
+    await session.refresh(order)
+    order_response = _to_response(order)
+    receipt = None
+    if data.payment_method.method == PaymentMethods.CARD and payment.payment_status == "succeeded":
+        receipt = DigitalReceiptResponse(
+            receipt_number=f"REC-{order.id:08d}",
+            order_id=order.id,
+            issued_at=datetime.now(UTC),
+            total_paid=payment.transaction_amount,
+            items=order_response.items,
+        )
+    return CheckoutResponse(order=order_response, payment=payment, receipt=receipt)
 
 
 @router.get("/me", response_model=list[OrderResponse])
