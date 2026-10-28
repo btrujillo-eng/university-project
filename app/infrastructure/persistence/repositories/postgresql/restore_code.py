@@ -29,7 +29,7 @@ class RestoreCodeRepository(IRestoreCodeRepository):
             return None
         
         return RestoreCodeForUpdatePassword(
-            user_id=restore_code.user.id,
+            user_id=restore_code.user_id,
             code_hash=restore_code.code_hash,
             was_used=restore_code.was_used,
             is_active=restore_code.is_active,
@@ -40,7 +40,7 @@ class RestoreCodeRepository(IRestoreCodeRepository):
         stmt = (
             update(RestoreCode)
             .where(
-                RestoreCode.user_id == code_id,
+                RestoreCode.id == code_id,
                 RestoreCode.is_active.is_(True)
             )
             .values(is_active=False)
