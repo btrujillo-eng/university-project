@@ -60,10 +60,16 @@ class ProductRepository(IProductRepository):
         product = await self.db_session.scalar(stmt)
         return None if product is None else self._to_product_data(product)
 
-    async def list_products(self, search_term: str | None = None) -> list[ProductSummary]:
+    async def list_products(
+        self,
+        search_term: str | None = None,
+        section_id: int | None = None,
+    ) -> list[ProductSummary]:
         stmt = select(Product).order_by(Product.name)
-        if search_term:
+        if search_term and search_term.strip():
             stmt = stmt.where(Product.name.ilike(f"%{search_term.strip()}%"))
+        if section_id is not None:
+            stmt = stmt.where(Product.section_id == section_id)
         products = (await self.db_session.scalars(stmt)).all()
         return [
             ProductSummary(

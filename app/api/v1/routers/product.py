@@ -55,8 +55,9 @@ def product_response(product: Product) -> ProductResponse:
 async def search_products(
     session: Annotated[AsyncSession, Depends(get_product_session)],
     search: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
+    section_id: Annotated[int | None, Query(gt=0)] = None,
 ) -> list[ProductResponse]:
-    products = await ProductRepository(session).list_products(search)
+    products = await ProductRepository(session).list_products(search, section_id)
     return [
         ProductResponse(
             id=p.id,
