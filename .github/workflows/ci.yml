@@ -37,5 +37,20 @@ jobs:
       - name: Compile application and tests
         run: python -m compileall -q app tests main.py
 
+      - name: Import application and configure ORM mappings
+        env:
+          STRIPE_API_KEY: sk_test_ci
+          RESEND_API_KEY: re_test_ci
+          MIGRATOR_DB_URL: postgresql://ci:ci@localhost:5432/ci
+          DB_USER: ci
+          DB_PASSWORD: ci
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: ci
+          JWT_SECRET_KEY: ci-only-secret-key
+          JWT_ALGORITHM: HS256
+          ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+        run: python -c "import main; print(f'Loaded {len(main.app.routes)} API routes')"
+
       - name: Run unit tests
         run: python -m pytest -q
