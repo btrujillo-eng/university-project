@@ -11,7 +11,7 @@ from app.api.v1.routers.user_auth import get_current_user
 from app.infrastructure.dtos import UserForAuthentication
 
 
-SECRET = "test-secret-for-unit-tests-only"
+SECRET = "test-secret-for-unit-tests-only-32"
 
 
 class FakeUserRepository:
