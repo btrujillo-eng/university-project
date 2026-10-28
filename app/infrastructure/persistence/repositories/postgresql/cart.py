@@ -25,11 +25,7 @@ class CartRepository:
         return await self.session.scalar(statement)
 
     async def add_item(self, user_id: int, product_id: int, quantity: int) -> None:
-        product_statement = select(Product).where(Product.id == product_id).with_for_update()
-        product = await self.session.scalar(product_statement)
-        if product is None:
-            raise ProductDoesNotExistError("El producto no existe")
-
+        # Lock order is always cart first, then product, matching checkout and avoiding deadlocks.
         cart = await self.get_cart_for_update(user_id)
         if cart is None:
             await self.session.execute(
@@ -38,6 +34,11 @@ class CartRepository:
             cart = await self.get_cart_for_update(user_id)
         if cart is None:
             raise RuntimeError("No fue posible obtener el carrito del cliente")
+
+        product_statement = select(Product).where(Product.id == product_id).with_for_update()
+        product = await self.session.scalar(product_statement)
+        if product is None:
+            raise ProductDoesNotExistError("El producto no existe")
 
         existing_item = next((item for item in cart.items if item.product_id == product_id), None)
         new_quantity = quantity + (existing_item.quantity if existing_item is not None else 0)

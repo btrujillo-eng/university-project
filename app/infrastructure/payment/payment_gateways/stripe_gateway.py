@@ -73,7 +73,7 @@ class StripeGateway(IPaymentGateway):
                 payment_method=CardPaymentResponse(
                     method=PaymentMethods.CARD,
                     processing_network=source,
-                    last_digits=payment_data.payment_method.card_number.get_secret_value()[:4]
+                    last_digits=payment_data.payment_method.card_number.get_secret_value()[-4:]
                 )
             )
              
