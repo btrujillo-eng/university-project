@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.v1.routers import (
+    cart,
     health,
     order,
     payment,
@@ -14,6 +15,7 @@ app = FastAPI(title="E-commerce of legumes", version="1.0.0")
 
 app.include_router(payment.router)
 app.include_router(product.router)
+app.include_router(cart.router)
 app.include_router(order.router)
 app.include_router(health.router)
 app.include_router(user_registration.router)

@@ -68,6 +68,25 @@ def upgrade() -> None:
         sa.Column("section_id", sa.Integer(), sa.ForeignKey("product_sections.id"), nullable=False),
     )
     op.create_table(
+        "carts",
+        sa.Column("id", sa.Integer(), sa.Identity(always=True), primary_key=True),
+        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=False),
+        sa.UniqueConstraint("user_id", name="uq_carts_user_id"),
+    )
+    op.create_table(
+        "cart_items",
+        sa.Column("id", sa.Integer(), sa.Identity(always=True), primary_key=True),
+        sa.Column("cart_id", sa.Integer(), sa.ForeignKey("carts.id", ondelete="CASCADE"), nullable=False),
+        sa.Column("product_id", sa.Integer(), sa.ForeignKey("products.id"), nullable=False),
+        sa.Column("quantity", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.current_timestamp(), nullable=False),
+        sa.UniqueConstraint("cart_id", "product_id", name="uq_cart_items_cart_product"),
+        sa.CheckConstraint("quantity > 0", name="ck_cart_items_quantity_positive"),
+    )
+    op.create_table(
         "orders",
         sa.Column("id", sa.Integer(), sa.Identity(always=True), primary_key=True),
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
@@ -97,6 +116,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("order_items")
     op.drop_table("orders")
+    op.drop_table("cart_items")
+    op.drop_table("carts")
     op.drop_table("products")
     op.drop_table("product_sections")
     op.drop_table("restore_codes")

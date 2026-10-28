@@ -1,4 +1,6 @@
 from .base import Base
+from .cart_items import CartItem
+from .carts import Cart
 from .order_items import OrderItem
 from .orders import Order
 from .product_section import ProductSection
@@ -8,6 +10,8 @@ from .users import User
 
 __all__ = [
     "Base",
+    "Cart",
+    "CartItem",
     "Order",
     "OrderItem",
     "Product",

@@ -28,6 +28,7 @@ from app.infrastructure.persistence.models import Product, User
 from app.infrastructure.persistence.models.order_items import OrderItem
 from app.infrastructure.persistence.models.orders import Order
 from app.infrastructure.persistence.repositories.postgresql.order import OrderRepository
+from app.infrastructure.persistence.repositories.postgresql.cart import CartRepository
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 MINIMUM_ORDER_AMOUNT = Decimal("20000.00")
@@ -77,7 +78,11 @@ async def checkout(
     if account is None:
         raise HTTPException(status_code=401, detail="La cuenta autenticada ya no existe")
 
-    quantities = {item.product_id: item.quantity for item in data.items}
+    cart = await CartRepository(session).get_cart(user.user_id)
+    if cart is None or not cart.items:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail="El carrito está vacío")
+    quantities = {item.product_id: item.quantity for item in cart.items}
     statement = select(Product).where(Product.id.in_(quantities)).order_by(Product.id).with_for_update()
     products = list((await session.scalars(statement)).all())
     products_by_id = {product.id: product for product in products}
@@ -158,6 +163,7 @@ async def checkout(
                 quantity=quantity,
             )
         )
+    cart.items.clear()
     await session.commit()
     saved_order = await OrderRepository(session).get_by_id_for_update(order.id)
     if saved_order is None:
