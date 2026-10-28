@@ -159,8 +159,10 @@ async def checkout(
             )
         )
     await session.commit()
-    await session.refresh(order)
-    order_response = _to_response(order)
+    saved_order = await OrderRepository(session).get_by_id_for_update(order.id)
+    if saved_order is None:
+        raise HTTPException(status_code=500, detail="No se pudo recuperar el pedido creado")
+    order_response = _to_response(saved_order)
     receipt = None
     if data.payment_method.method == PaymentMethods.CARD and payment.payment_status == "succeeded":
         receipt = DigitalReceiptResponse(

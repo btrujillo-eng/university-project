@@ -131,7 +131,7 @@ async def update_product_stock(
     session: Annotated[AsyncSession, Depends(get_product_session)],
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> ProductResponse:
-    require_role(user, UserRole.WAREHOUSE_MANAGER, UserRole.STORE_MANAGER)
+    require_role(user, UserRole.WAREHOUSE_MANAGER)
     try:
         await ProductRepository(session).update_stock(product_id, data.stock)
         await session.commit()
