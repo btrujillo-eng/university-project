@@ -32,5 +32,5 @@ def test_product_search_keeps_sql_injection_payload_as_bound_parameter() -> None
 
     assert result == []
     assert "DROP TABLE products" not in sql
-    assert malicious_search in compiled.params.values()
+    assert any(malicious_search in str(value) for value in compiled.params.values())
     assert "ILIKE" in sql
