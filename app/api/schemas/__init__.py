@@ -10,6 +10,7 @@ from .token import Token, TokenData
 from .user import (
     UserCreateRequest,
     UserDataRequest,
+    UserRegistrationResponse,
     UserResponse,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     "TokenData",
     "UserCreateRequest",
     "UserDataRequest",
+    "UserRegistrationResponse",
     "UserResponse",
 ]
