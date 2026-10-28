@@ -25,6 +25,10 @@ class OrderRepository(IOrderRepository):
         statement = self._base_statement().where(Order.user_id == user_id).order_by(Order.created_at.desc())
         return list((await self.session.scalars(statement)).all())
 
+    async def list_all(self) -> list[Order]:
+        statement = self._base_statement().order_by(Order.created_at.desc())
+        return list((await self.session.scalars(statement)).all())
+
     async def list_by_delivery_status(self, status: DeliveryStatus) -> list[Order]:
         statement = self._base_statement().where(Order.delivery_status == status).order_by(Order.created_at.asc())
         return list((await self.session.scalars(statement)).all())

@@ -22,7 +22,6 @@ from app.api.v1.routers.user_auth import get_current_user
 from app.application import ProcessPaymentUseCase
 from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
 from app.domain.ports.order_repository import IOrderRepository
-from app.exceptions import ProductDoesNotExistError
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
 from app.infrastructure.persistence.models import Product, User
@@ -79,12 +78,7 @@ async def checkout(
         raise HTTPException(status_code=401, detail="La cuenta autenticada ya no existe")
 
     quantities = {item.product_id: item.quantity for item in data.items}
-    statement = (
-        select(Product)
-        .where(Product.id.in_(quantities))
-        .order_by(Product.id)
-        .with_for_update()
-    )
+    statement = select(Product).where(Product.id.in_(quantities)).order_by(Product.id).with_for_update()
     products = list((await session.scalars(statement)).all())
     products_by_id = {product.id: product for product in products}
     missing_ids = set(quantities) - set(products_by_id)
@@ -95,10 +89,7 @@ async def checkout(
     for product_id, quantity in quantities.items():
         if products_by_id[product_id].stock < quantity:
             await session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Stock insuficiente para el producto {product_id}",
-            )
+            raise HTTPException(status_code=409, detail=f"Stock insuficiente para el producto {product_id}")
 
     subtotal = sum(
         (products_by_id[product_id].price * quantity for product_id, quantity in quantities.items()),
@@ -107,7 +98,7 @@ async def checkout(
     if subtotal < MINIMUM_ORDER_AMOUNT:
         await session.rollback()
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"El pedido mínimo es de COP {MINIMUM_ORDER_AMOUNT:.2f}",
         )
 
@@ -116,10 +107,7 @@ async def checkout(
         middle_name=account.middle_name,
         first_surname=account.first_surname,
         middle_surname=account.middle_surname,
-        contact_info=ContactInfoRequest(
-            email=account.email,
-            phone_number=data.shipping.phone_number,
-        ),
+        contact_info=ContactInfoRequest(email=account.email, phone_number=data.shipping.phone_number),
     )
     payment_data = PaymentDataRequest(
         user_data=user_data,
@@ -195,6 +183,16 @@ async def get_my_orders(
     return [_to_response(order) for order in orders]
 
 
+@router.get("/packaging", response_model=list[OrderResponse])
+async def get_orders_for_packaging(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+) -> list[OrderResponse]:
+    _require_role(user, UserRole.PACKAGING_MANAGER)
+    orders = await OrderRepository(session).list_all()
+    return [_to_response(order) for order in orders]
+
+
 @router.get("/packaging/pending", response_model=list[OrderResponse])
 async def get_orders_pending_packaging(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
@@ -219,6 +217,27 @@ async def mark_order_packaged(
     if order.delivery_status != DeliveryStatus.PENDING:
         raise HTTPException(status_code=409, detail="El pedido no está pendiente de empaque")
     order.delivery_status = DeliveryStatus.PACKAGED
+    await session.commit()
+    return _to_response(order)
+
+
+@router.post("/{order_id}/assign-courier/{courier_id}", response_model=OrderResponse)
+async def assign_courier(
+    order_id: int,
+    courier_id: int,
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+) -> OrderResponse:
+    _require_role(user, UserRole.STORE_MANAGER)
+    courier = await session.get(User, courier_id)
+    if courier is None or courier.user_role != UserRole.COURIER:
+        raise HTTPException(status_code=404, detail="El domiciliario no existe")
+    order = await OrderRepository(session).get_by_id_for_update(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="El pedido no existe")
+    if order.delivery_status != DeliveryStatus.PACKAGED:
+        raise HTTPException(status_code=409, detail="Solo se pueden asignar pedidos empacados")
+    order.courier_id = courier_id
     await session.commit()
     return _to_response(order)
 

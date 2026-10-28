@@ -12,6 +12,9 @@ class IOrderRepository(ABC):
     async def get_customer_orders(self, user_id: int) -> list[Order]: ...
 
     @abstractmethod
+    async def list_all(self) -> list[Order]: ...
+
+    @abstractmethod
     async def list_by_delivery_status(self, status: DeliveryStatus) -> list[Order]: ...
 
     @abstractmethod
