@@ -78,7 +78,7 @@ async def checkout(
     if account is None:
         raise HTTPException(status_code=401, detail="La cuenta autenticada ya no existe")
 
-    cart = await CartRepository(session).get_cart(user.user_id)
+    cart = await CartRepository(session).get_cart_for_update(user.user_id)
     if cart is None or not cart.items:
         await session.rollback()
         raise HTTPException(status_code=422, detail="El carrito está vacío")
