@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
@@ -67,14 +68,14 @@ def active_user(*, is_active: bool = True) -> UserForAuthentication:
         {"exp": datetime.now(UTC) + timedelta(minutes=5)},
     ],
 )
-async def test_current_user_rejects_token_missing_required_claims(
+def test_current_user_rejects_token_missing_required_claims(
     payload: dict[str, object],
 ) -> None:
     repository = FakeUserRepository(active_user())
     token = make_token(payload)
 
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_user(repository, make_settings(), token)
+        asyncio.run(get_current_user(repository, make_settings(), token))
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.headers == {"WWW-Authenticate": "Bearer"}
@@ -82,7 +83,7 @@ async def test_current_user_rejects_token_missing_required_claims(
 
 
 @pytest.mark.parametrize("subject", ["not-a-number", "0", "-2"])
-async def test_current_user_rejects_invalid_subject(subject: str) -> None:
+def test_current_user_rejects_invalid_subject(subject: str) -> None:
     repository = FakeUserRepository(active_user())
     token = make_token(
         {"sub": subject, "exp": datetime.now(UTC) + timedelta(minutes=5)}
@@ -95,7 +96,7 @@ async def test_current_user_rejects_invalid_subject(subject: str) -> None:
     assert repository.requested_user_id is None
 
 
-async def test_current_user_returns_authenticated_user_for_valid_token() -> None:
+def test_current_user_returns_authenticated_user_for_valid_token() -> None:
     repository = FakeUserRepository(active_user())
     token = make_token(
         {"sub": "7", "exp": datetime.now(UTC) + timedelta(minutes=5)}
@@ -108,7 +109,7 @@ async def test_current_user_returns_authenticated_user_for_valid_token() -> None
     assert repository.requested_user_id == 7
 
 
-async def test_current_user_rejects_inactive_account() -> None:
+def test_current_user_rejects_inactive_account() -> None:
     repository = FakeUserRepository(active_user(is_active=False))
     token = make_token(
         {"sub": "7", "exp": datetime.now(UTC) + timedelta(minutes=5)}
