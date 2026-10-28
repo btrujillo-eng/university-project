@@ -17,42 +17,43 @@ class UnitOfWork(IUnitOfWork):
         self.session: AsyncSession | None = None
         self._users: UserRepository | None = None
         self._restore_code: RestoreCodeRepository | None = None
-     
+
     @property
     def user(self) -> UserRepository | None:
         return self._users
-    
+
     @property
     def restore_code(self) -> RestoreCodeRepository | None:
         return self._restore_code
-        
-        
+
     async def __aenter__(self) -> Self:
         self.session = self.session_factory()
-        
         self._users = UserRepository(self.session)
+        self._restore_code = RestoreCodeRepository(self.session)
         return self
-        
+
     async def __aexit__(
-        self, 
+        self,
         exc_type: type[BaseException] | None,
-        exc_value: BaseException | None, 
-        exc_tb: TracebackType | None
-        ) -> bool | None:
+        exc_value: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
         try:
             if exc_type is not None:
                 await self.rollback()
         finally:
             if self.session is not None:
                 await self.session.close()
-                self.session = None
-                self._users = None
-            
+            self.session = None
+            self._users = None
+            self._restore_code = None
+        return None
+
     async def commit(self) -> None:
         if self.session is None:
             raise UnitWorkIsInactiveError("Unit work is not active")
         await self.session.commit()
-        
+
     async def rollback(self) -> None:
         if self.session is not None:
-           await self.session.rollback()
+            await self.session.rollback()
