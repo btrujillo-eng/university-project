@@ -12,8 +12,9 @@ class OrderData:
     shipping_details: str
     shipping_city: str
     phone_number: str
-    
-@dataclass(frozen=True, slots=True)    
+
+
+@dataclass(frozen=True, slots=True)
 class RegisteredOrder:
     order_id: int
     delivery_status: str

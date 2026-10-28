@@ -1,3 +1,4 @@
+from .order import CashPaymentUpdateRequest, OrderItemResponse, OrderResponse
 from .payment import (
     CardPaymentDataRequest,
     CardPaymentResponse,
@@ -24,8 +25,11 @@ __all__ = [
     "CardPaymentDataRequest",
     "CardPaymentResponse",
     "CashPaymentDataRequest",
+    "CashPaymentUpdateRequest",
     "CreateRestoreCodeRequest",
     "CreateRestoreCodeResponse",
+    "OrderItemResponse",
+    "OrderResponse",
     "PaymentDataRequest",
     "PaymentResponse",
     "ProductCreateRequest",
