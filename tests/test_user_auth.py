@@ -90,7 +90,7 @@ def test_current_user_rejects_invalid_subject(subject: str) -> None:
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_user(repository, make_settings(), token)
+        asyncio.run(get_current_user(repository, make_settings(), token))
 
     assert exc_info.value.status_code == 401
     assert repository.requested_user_id is None
@@ -102,7 +102,7 @@ def test_current_user_returns_authenticated_user_for_valid_token() -> None:
         {"sub": "7", "exp": datetime.now(UTC) + timedelta(minutes=5)}
     )
 
-    result = await get_current_user(repository, make_settings(), token)
+    result = asyncio.run(get_current_user(repository, make_settings(), token))
 
     assert result.user_id == 7
     assert result.first_name == "Test"
@@ -116,7 +116,7 @@ def test_current_user_rejects_inactive_account() -> None:
     )
 
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_user(repository, make_settings(), token)
+        asyncio.run(get_current_user(repository, make_settings(), token))
 
     assert exc_info.value.status_code == 403
     assert repository.requested_user_id == 7
