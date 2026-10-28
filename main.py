@@ -1,10 +1,35 @@
+import asyncio
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
+
 from fastapi import FastAPI
 
 from app.api.v1.routers import health, payment, user_auth, user_registration
+from app.infrastructure.config import get_settings
+from app.infrastructure.database_engine import AsyncSessionLocal, engine
+from app.infrastructure.notifications import PaymentConfirmationOutboxWorker
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    worker = PaymentConfirmationOutboxWorker(AsyncSessionLocal, settings)
+    task = asyncio.create_task(worker.run(), name="payment-confirmation-outbox-worker")
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        await engine.dispose()
+
 
 app = FastAPI(
     title="E-commerce of legumes",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.include_router(payment.router)
