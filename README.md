@@ -91,15 +91,27 @@ Los endpoints protegidos verifican el JWT y el rol correspondiente. Los cambios 
 
 ## Pruebas y CI
 
-Ejecutar las pruebas localmente:
+Ejecutar las pruebas automatizadas localmente:
 
 ```bash
-python -m compileall -q app tests main.py
+python -m compileall -q app tests main.py scripts
 python -m pytest -q
 ```
 
-GitHub Actions ejecuta compilación, importación de la aplicación y configuración de mapeos ORM, y pruebas unitarias en cada push a la rama de trabajo.
+GitHub Actions ejecuta compilación, importación de la aplicación y configuración de mapeos ORM, migración contra PostgreSQL temporal y pruebas unitarias en cada push a la rama de trabajo.
 
-## Nota técnica
+### Prueba de rendimiento de registro e inicio de sesión
 
-El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida. Para un despliegue productivo conviene añadir idempotencia de pagos y un patrón outbox/reconciliación para gestionar el caso excepcional en que Stripe apruebe el cobro pero falle la persistencia posterior.
+Con una base de datos de pruebas y la API levantada, ejecutar:
+
+```bash
+python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3
+```
+
+El script crea cuentas con correos únicos en cada corrida, mide registro e inicio de sesión concurrentes y valida que todas las respuestas sean exitosas y que el percentil 95 de latencia sea de 3 segundos o menos. Úsalo únicamente en un entorno de pruebas, porque crea cuentas persistentes. El objetivo de rendimiento no se considera verificado hasta ejecutar el script contra el entorno objetivo y guardar sus resultados.
+
+## Limitaciones conocidas
+
+- El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida. Para producción conviene implementar idempotencia de pagos y un patrón outbox/reconciliación para gestionar el caso excepcional en que Stripe apruebe el cobro pero falle la persistencia posterior.
+- La integración actual de Stripe usa tokens de prueba por red de tarjeta. Antes de producción, el frontend debe tokenizar los datos con Stripe.js y el backend no debe recibir ni almacenar el número completo ni el CVV.
+- Las pruebas automatizadas actuales no sustituyen una prueba de integración real con credenciales de Stripe/Resend ni una medición de rendimiento ejecutada contra un entorno desplegado.

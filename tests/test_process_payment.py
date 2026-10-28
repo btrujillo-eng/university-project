@@ -1,3 +1,4 @@
+import asyncio
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -49,7 +50,11 @@ class FakeNotificationService:
     def __init__(self) -> None:
         self.notifications = []
 
-    def notify_all(self, payment_response: SimpleNamespace, payment_data: FakePaymentData) -> None:
+    def notify_all(
+        self,
+        payment_response: SimpleNamespace,
+        payment_data: FakePaymentData,
+    ) -> None:
         self.notifications.append((payment_response, payment_data))
 
 
@@ -77,7 +82,7 @@ def test_payment_notifies_only_after_successful_card_payment(
     use_case = ProcessPaymentUseCase(FakeShoppingCart(), factory, notifications)
     data = FakePaymentData(method, Decimal("25000.00"))
 
-    result = __import__("asyncio").run(use_case.process(data))
+    result = asyncio.run(use_case.process(data))
 
     assert result is response
     assert factory.requested_method is method
