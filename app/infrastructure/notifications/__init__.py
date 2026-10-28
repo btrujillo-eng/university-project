@@ -4,6 +4,7 @@ from app.infrastructure.notifications.notifiers import (
     SmsChannel,
     WhatsappChannel,
 )
+from app.infrastructure.notifications.restore_code_notifier import ResendRestoreCodeNotifier
 from app.infrastructure.notifications.template import (
     EmailChannelTemplate,
     PhoneChannelTemplate,
@@ -14,6 +15,7 @@ __all__ = [
     "EmailChannelTemplate",
     "NotificationService",
     "PhoneChannelTemplate",
+    "ResendRestoreCodeNotifier",
     "SmsChannel",
     "WhatsappChannel",
 ]

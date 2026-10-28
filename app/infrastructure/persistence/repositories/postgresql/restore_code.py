@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 import logging
 
 from sqlalchemy import func, select, update
@@ -20,28 +21,41 @@ class RestoreCodeRepository(IRestoreCodeRepository):
     def __init__(self, db_session: AsyncSession) -> None:
         self.db_session = db_session
 
+    @staticmethod
+    def _to_dto(record: RestoreCode) -> RestoreCodeForUpdatePassword:
+        return RestoreCodeForUpdatePassword(
+            user_id=record.user_id,
+            code_hash=record.code_hash,
+            was_used=record.was_used,
+            is_active=record.is_active,
+            expired_at=record.expired_at,
+        )
+
     async def get_restore_code_by_id(
         self, code_id: int
     ) -> RestoreCodeForUpdatePassword | None:
-        # Lock the row until the surrounding Unit of Work commits or rolls back.
-        # This prevents concurrent password-reset requests from both validating
-        # the same code before either one consumes it.
+        stmt = select(RestoreCode).where(RestoreCode.id == code_id).with_for_update()
+        record = await self.db_session.scalar(stmt)
+        return self._to_dto(record) if record is not None else None
+
+    async def get_latest_active_restore_code(
+        self, user_id: int
+    ) -> tuple[int, RestoreCodeForUpdatePassword] | None:
         stmt = (
             select(RestoreCode)
-            .where(RestoreCode.id == code_id)
+            .where(
+                RestoreCode.user_id == user_id,
+                RestoreCode.is_active.is_(True),
+                RestoreCode.was_used.is_(False),
+            )
+            .order_by(RestoreCode.id.desc())
+            .limit(1)
             .with_for_update()
         )
-        restore_code = await self.db_session.scalar(stmt)
-        if restore_code is None:
+        record = await self.db_session.scalar(stmt)
+        if record is None:
             return None
-
-        return RestoreCodeForUpdatePassword(
-            user_id=restore_code.user_id,
-            code_hash=restore_code.code_hash,
-            was_used=restore_code.was_used,
-            is_active=restore_code.is_active,
-            expired_at=restore_code.expired_at,
-        )
+        return record.id, self._to_dto(record)
 
     async def desactivate_restore_code(self, code_id: int) -> bool:
         stmt = (
@@ -57,8 +71,6 @@ class RestoreCodeRepository(IRestoreCodeRepository):
         return bool(result.rowcount)
 
     async def mark_restore_code_as_used(self, code_id: int) -> bool:
-        # The expiry predicate is repeated in the UPDATE so a code that expires
-        # after it was read cannot be consumed successfully.
         stmt = (
             update(RestoreCode)
             .where(
@@ -75,26 +87,30 @@ class RestoreCodeRepository(IRestoreCodeRepository):
     async def add_restore_code(
         self, restore_data: RestoreCodeData
     ) -> GeneratedRestoreCode:
-        restore_code = RestoreCode(
+        # Deactivate prior codes before inserting a replacement. This keeps the
+        # latest-code lookup unambiguous even without a database partial index.
+        await self.db_session.execute(
+            update(RestoreCode)
+            .where(
+                RestoreCode.user_id == restore_data.user_id,
+                RestoreCode.is_active.is_(True),
+                RestoreCode.was_used.is_(False),
+            )
+            .values(is_active=False)
+        )
+        record = RestoreCode(
             user_id=restore_data.user_id,
             code_hash=restore_data.code_hash,
             expired_at=restore_data.expired_at,
         )
         try:
-            self.db_session.add(restore_code)
+            self.db_session.add(record)
             await self.db_session.flush()
-            # Use the persisted foreign-key value directly. Accessing
-            # restore_code.user.id can trigger async lazy-loading (MissingGreenlet).
-            return GeneratedRestoreCode(
-                code_id=restore_code.id,
-                user_id=restore_code.user_id,
-            )
-        except IntegrityError as e:
-            sqlstate = getattr(e.orig, "sqlstate", None) or getattr(
-                e.orig, "pgcode", None
-            )
+            return GeneratedRestoreCode(code_id=record.id, user_id=record.user_id)
+        except IntegrityError as exc:
+            sqlstate = getattr(exc.orig, "sqlstate", None) or getattr(exc.orig, "pgcode", None)
             if sqlstate == "23505":
                 raise ThereIsAnActiveRestoreCodeError(
                     "A restoration code already exists in active state"
-                ) from e
+                ) from exc
             raise

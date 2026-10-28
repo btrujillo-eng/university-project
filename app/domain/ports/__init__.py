@@ -14,6 +14,7 @@ from .payment_provider import (
     IShoppingCart,
 )
 from .product_repository import IProductRepository
+from .restore_code_notifier import IRestoreCodeNotifier
 from .restore_code_repository import IRestoreCodeRepository
 from .unit_of_work import IUnitOfWork
 from .user_repository import IUserRepository
@@ -31,6 +32,7 @@ __all__ = [
     "IPaymentMethodFactory",
     "IPaymentProcessor",
     "IProductRepository",
+    "IRestoreCodeNotifier",
     "IRestoreCodeRepository",
     "IShoppingCart",
     "IUnitOfWork",

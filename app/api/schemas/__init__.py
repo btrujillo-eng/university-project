@@ -5,7 +5,12 @@ from .payment import (
     PaymentDataRequest,
     PaymentResponse,
 )
-from .restore_code import CreateRestoreCodeRequest, CreateRestoreCodeResponse
+from .restore_code import (
+    CreateRestoreCodeRequest,
+    CreateRestoreCodeResponse,
+    UpdatePasswordRequest,
+    VerifyRestoreCodeRequest,
+)
 from .token import Token, TokenData
 from .user import (
     UserCreateRequest,
@@ -24,8 +29,10 @@ __all__ = [
     "PaymentResponse",
     "Token",
     "TokenData",
+    "UpdatePasswordRequest",
     "UserCreateRequest",
     "UserDataRequest",
     "UserRegistrationResponse",
     "UserResponse",
+    "VerifyRestoreCodeRequest",
 ]
