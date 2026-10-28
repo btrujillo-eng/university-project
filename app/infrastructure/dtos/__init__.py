@@ -1,9 +1,7 @@
-from app.infrastructure.dtos.order import (
-    OrderData,
-    RegisteredOrder,
-)
+from app.infrastructure.dtos.order import OrderData, RegisteredOrder
 from app.infrastructure.dtos.order_items import RegisteredOrderItem
 from app.infrastructure.dtos.product import (
+    ProductSummary,
     RegisteredProduct,
     RegisterProductData,
     UpdatedProduct,
@@ -25,6 +23,7 @@ __all__ = [
     "AuthenticatedUser",
     "GeneratedRestoreCode",
     "OrderData",
+    "ProductSummary",
     "RegisterProductData",
     "RegisterUserData",
     "RegisteredOrder",

@@ -9,6 +9,8 @@ class RegisterProductData:
     price: Decimal
     stock: int
     unit_of_measure: str
+    image_path: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class RegisteredProduct:
@@ -19,10 +21,22 @@ class RegisteredProduct:
     stock: int
     unit_of_measure: str
 
-@dataclass(frozen=True, slots=True)    
+
+@dataclass(frozen=True, slots=True)
 class UpdatedProduct:
     id: int
     name: str
     price: Decimal
     stock: int
     unit_of_measure: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProductSummary:
+    id: int
+    name: str
+    section_id: int
+    price: Decimal
+    stock: int
+    unit_of_measure: str
+    image_path: str | None
