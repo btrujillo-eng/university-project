@@ -29,6 +29,6 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text('true'))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     
-    orders: Mapped[list[Order]] = relationship(back_populates='user')
+    orders: Mapped[list[Order]] = relationship(back_populates="user", foreign_keys="Order.user_id")
     restore_codes: Mapped[list[RestoreCode]] = relationship(back_populates='user')
     
