@@ -15,7 +15,7 @@ class RestoreCode(Base):
     __tablename__ = 'restore_codes'
     
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
-    user_id: Mapped[User] = mapped_column(Integer, ForeignKey('users.id'))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     code_hash: Mapped[str] = mapped_column(String(255))
     was_used: Mapped[bool] = mapped_column(Boolean, server_default=text('false'))
     expired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
