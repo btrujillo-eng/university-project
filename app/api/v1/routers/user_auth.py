@@ -17,76 +17,92 @@ from app.infrastructure.dtos import AuthenticatedUser
 from app.infrastructure.jwt_handler import create_access_token
 from app.infrastructure.persistence.repositories.postgresql import UserRepository
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/v1/auth/token")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/v1/auth/token")
+
+CREDENTIALS_EXCEPTION = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="No se pudieron validar las credenciales",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
 
 async def get_current_user(
     repository: Annotated[UserRepository, Depends(get_user_repository)],
-    settings: Annotated[Settings, Depends(get_settings)], 
+    settings: Annotated[Settings, Depends(get_settings)],
     token: Annotated[str, Depends(oauth2_scheme)],
-    ) -> AuthenticatedUser:
-    credential_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudieron validar las credenciales",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
+) -> AuthenticatedUser:
     try:
         payload = decode(
-            token, 
+            token,
             settings.jwt_secret_key.get_secret_value(),
-            algorithms=[settings.jwt_algorithm]
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["exp", "sub"]},
         )
-        id = payload.get('sub')
-        if not id:
-            raise credential_exception
-    except InvalidTokenError:
-        raise credential_exception
-    user = await repository.get_user_by_id(id)
+        subject = payload.get("sub")
+        if not isinstance(subject, str) or not subject.isdecimal():
+            raise CREDENTIALS_EXCEPTION
+        user_id = int(subject)
+        if user_id <= 0:
+            raise CREDENTIALS_EXCEPTION
+    except (InvalidTokenError, TypeError, ValueError):
+        raise CREDENTIALS_EXCEPTION from None
+
+    user = await repository.get_user_by_id(user_id)
     if user is None:
-        raise credential_exception
-    
-    if user.is_active:
-        return AuthenticatedUser(
-            user_id=user.user_id,
-            first_name=user.first_name,
-            first_surname=user.first_surname,
-            user_role=user.user_role,
-            is_active=user.is_active
+        raise CREDENTIALS_EXCEPTION
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu usuario está inactivo. Por favor, contacta con soporte.",
         )
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Tu usuario está inactivo. Por favor vuelve a activarlo nuevamente."
+
+    return AuthenticatedUser(
+        user_id=user.user_id,
+        first_name=user.first_name,
+        first_surname=user.first_surname,
+        user_role=user.user_role,
+        is_active=user.is_active,
     )
 
+
 router_login = APIRouter(prefix="/users", tags=["token"])
+
+
 @router_login.post("/v1/auth/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     auth_user: Annotated[AuthenticateUserUseCase, Depends(get_authenticate_user)],
-    ) -> Token:
-    try:    
+) -> Token:
+    try:
         user = await auth_user.authenticate(form_data.username, form_data.password)
         access_token = create_access_token(user.user_id)
         return Token(access_token=access_token)
     except AuthenticateUserError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Correo o contraseña incorrectos"
-        )
+            detail="Correo o contraseña incorrectos",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
     except UserIsNotActiveError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tú usuario está inactivo. Por favor vuelve a activarlo nuevamente."
-        )
-    
-router_home_page  =  APIRouter(prefix="/me", tags=["users"])
+            detail="Tu usuario está inactivo. Por favor, contacta con soporte.",
+        ) from None
+
+
+router_home_page = APIRouter(prefix="/me", tags=["users"])
+
+
 @router_home_page.get("/", response_model=UserResponse)
 async def read_user_me(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
-    ) -> UserResponse:
+) -> UserResponse:
     return UserResponse(
         user_id=user.user_id,
         first_name=user.first_name,
         first_surname=user.first_surname,
         user_role=UserRole(user.user_role),
-        is_active=user.is_active
+        is_active=user.is_active,
     )
