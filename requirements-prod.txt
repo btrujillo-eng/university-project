@@ -73,3 +73,6 @@ MarkupSafe==3.0.3
  
 # ── Config ────────────────────────────────────────────────────────
 python-dotenv==1.2.2
+
+# Google Sign-In ID token verification
+google-auth>=2.38,<3
