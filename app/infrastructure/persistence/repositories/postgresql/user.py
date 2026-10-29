@@ -15,6 +15,7 @@ from app.infrastructure.dtos import (
     RegisterUserData,
     UpdatedUserInfo,
     UserForAuthentication,
+    GoogleUserData,
 )
 from app.infrastructure.persistence.models import User
 
@@ -31,7 +32,8 @@ class UserRepository(IUserRepository):
             first_surname=user.first_surname,
             password_hash=user.password_hash,
             user_role=user.user_role,
-            is_active=user.is_active
+            is_active=user.is_active,
+            google_sub=user.google_sub,
         )
     
     async def get_user_by_email(self, email: str) -> UserForAuthentication | None:
@@ -42,6 +44,25 @@ class UserRepository(IUserRepository):
         
         return self._to_user_auth(user)
     
+    async def get_user_by_google_sub(self, google_sub: str) -> UserForAuthentication | None:
+        stmt = select(User).where(User.google_sub == google_sub)
+        user = await self.db_session.scalar(stmt)
+        return self._to_user_auth(user) if user is not None else None
+
+    async def add_google_user(self, data: GoogleUserData) -> UserForAuthentication:
+        user = User(
+            first_name=data.first_name,
+            first_surname=data.first_surname,
+            email=data.email,
+            password_hash=None,
+            google_sub=data.google_sub,
+            user_role="customer",
+        )
+        self.db_session.add(user)
+        await self.db_session.flush()
+        await self.db_session.refresh(user)
+        return self._to_user_auth(user)
+
     async def get_user_by_email_for_update(self, email: str) -> UserForAuthentication | None:
             stmt = select(User).where(User.email == email).with_for_update()
             user = await self.db_session.scalar(stmt)
