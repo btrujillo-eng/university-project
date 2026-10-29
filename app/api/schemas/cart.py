@@ -1,11 +1,12 @@
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import UnitOfMeasure
 
 
 class AddCartItemRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     product_id: int = Field(gt=0)
     quantity: int = Field(gt=0, le=1000)
 
