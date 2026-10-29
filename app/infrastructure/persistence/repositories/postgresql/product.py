@@ -9,6 +9,7 @@ from app.domain.ports import IProductRepository
 from app.exceptions import (
     ProductAlreadyExistsError,
     ProductDoesNotExistError,
+    ProductQuantityInvalidError,
     ProductRegistrationServiceError,
 )
 from app.infrastructure.dtos import (
@@ -118,8 +119,10 @@ class ProductRepository(IProductRepository):
         await self.db_session.flush()
         return self._to_updated_product(product)
 
-    async def update_stock(self, product_id: int, new_stock: int) -> UpdatedProduct:
+    async def update_stock(self, product_id: int, new_stock: Decimal) -> UpdatedProduct:
         product = await self._get_product(product_id)
+        if product.unit_of_measure.value == "unit" and new_stock != new_stock.to_integral_value():
+            raise ProductQuantityInvalidError("El stock de productos por unidad debe ser un número entero")
         product.stock = new_stock
         await self.db_session.flush()
         return self._to_updated_product(product)
