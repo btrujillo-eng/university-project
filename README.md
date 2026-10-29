@@ -53,14 +53,14 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 ## Endpoints principales
 
 - Usuarios: registro, inicio de sesión con correo/contraseña, inicio de sesión con Google (`POST /users/v1/auth/google`, JSON `{ "id_token": "<Google ID token>" }`) y restauración de contraseña por correo. El frontend debe obtener el ID token con Google Identity Services; el backend valida firma, audiencia y correo verificado antes de emitir su propio JWT. Las cuentas Google nuevas usan el rol `customer`. No se vincula automáticamente una cuenta existente por coincidencia de correo.
-- Catálogo: `GET /products/` con filtros opcionales `search` y `section_id`; `POST /products/` para el administrador de tienda.
+- Catálogo: `GET /products/` con filtros opcionales `search`, `section_id`, `limit` (1–100, predeterminado 50) y `offset`; `POST /products/` para el administrador de tienda.
 - Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
 - Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
 - Carrito: `GET /cart/`, `POST /cart/items`, `DELETE /cart/items/{product_id}`.
-- Checkout: `POST /orders/checkout`; valida stock y mínimo de COP 20.000.
+- Checkout: `POST /orders/checkout`; valida stock y mínimo de COP 20.000. Es el único punto de entrada público para procesar un pago; el endpoint genérico `/payments/` se retiró para impedir que el cliente enviara importes arbitrarios fuera de un pedido validado.
 - Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo.
 
-Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
+Los descuentos del checkout no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`. Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
 
 ## Pruebas y CI
 
