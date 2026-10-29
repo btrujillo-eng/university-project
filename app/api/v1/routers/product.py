@@ -23,6 +23,7 @@ from app.domain.enums import UnitOfMeasure, UserRole
 from app.exceptions import (
     ProductAlreadyExistsError,
     ProductDoesNotExistError,
+    ProductQuantityInvalidError,
     ProductRegistrationServiceError,
 )
 from app.infrastructure.database_engine import AsyncSessionLocal
@@ -153,7 +154,7 @@ async def create_product(
     name: Annotated[str, Form(min_length=2, max_length=120)],
     section_id: Annotated[int, Form(gt=0)],
     price: Annotated[str, Form()],
-    stock: Annotated[int, Form(ge=0)],
+    stock: Annotated[Decimal, Form(ge=0, max_digits=10, decimal_places=3)],
     unit_of_measure: Annotated[UnitOfMeasure, Form()],
     image: Annotated[UploadFile, File()],
     session: Annotated[AsyncSession, Depends(get_product_session)],
@@ -232,6 +233,9 @@ async def update_product_price(
     except ProductDoesNotExistError as exc:
         await session.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ProductQuantityInvalidError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.patch("/{product_id}/stock", response_model=ProductResponse)
