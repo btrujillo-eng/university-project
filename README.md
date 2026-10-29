@@ -58,7 +58,7 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 - Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
 - Carrito: `GET /cart/`, `POST /cart/items`, `DELETE /cart/items/{product_id}`.
 - Checkout: `POST /orders/checkout`; valida stock y mínimo de COP 20.000. Es el único punto de entrada público para procesar un pago; el endpoint genérico `/payments/` se retiró para impedir que el cliente enviara importes arbitrarios fuera de un pedido validado.
-- Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo.
+- Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo. Los listados aceptan `limit` (1–100, predeterminado 50) y `offset` para paginar.
 
 Los descuentos del checkout no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`. Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
 
