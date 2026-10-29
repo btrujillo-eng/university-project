@@ -7,7 +7,7 @@ Backend REST para la tienda de legumbrería Canasta Express. Está construido co
 - Python 3.13 y PostgreSQL.
 - Claves de prueba de Stripe y Resend para probar las integraciones externas.
 - Instala dependencias con `python -m pip install -r requirements-prod.txt -r requirements-dev.txt`.
-- Configura en `.env` las variables de base de datos, Stripe, Resend y JWT. No subas secretos al repositorio.
+- Configura en `.env` las variables de base de datos, Stripe, Resend y JWT. Para habilitar Google Sign-In, agrega `GOOGLE_CLIENT_ID` con el ID de cliente OAuth 2.0 de tu aplicación web. No subas secretos al repositorio.
 - En una base vacía, ejecuta `alembic upgrade head`; después inicia con `uvicorn main:app --reload`.
 - La documentación interactiva queda en `/docs`.
 
@@ -52,7 +52,7 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 
 ## Endpoints principales
 
-- Usuarios: registro, inicio de sesión JWT y restauración de contraseña por correo.
+- Usuarios: registro, inicio de sesión con correo/contraseña, inicio de sesión con Google (`POST /users/v1/auth/google`, JSON `{ "id_token": "<Google ID token>" }`) y restauración de contraseña por correo. El frontend debe obtener el ID token con Google Identity Services; el backend valida firma, audiencia y correo verificado antes de emitir su propio JWT. Las cuentas Google nuevas usan el rol `customer`. No se vincula automáticamente una cuenta existente por coincidencia de correo.
 - Catálogo: `GET /products/` con filtros opcionales `search` y `section_id`; `POST /products/` para el administrador de tienda.
 - Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
 - Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
@@ -93,3 +93,8 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 ### Integración segura de tarjeta
 
 El checkout con tarjeta recibe `payment_method_id` de Stripe (un ID `pm_...` generado mediante Stripe.js/Elements en el navegador). No envíes `card_number` ni `cvv` al backend. El gateway crea un PaymentIntent y registra en la respuesta únicamente la marca y los últimos cuatro dígitos de la tarjeta. La integración debe probarse con claves y métodos de pago de prueba de Stripe antes de conectar el frontend.
+
+
+### Cambios de esquema para Google Sign-In
+
+La revisión Alembic `20261029_03` permite `users.password_hash` nulo y agrega `users.google_sub` nullable con índice único. Los usuarios locales conservan su hash; las cuentas Google pueden no tener contraseña local. Ejecuta `alembic upgrade head` después de respaldar la base de datos. Si aplicas el cambio manualmente, usa la misma columna e índice para que la migración no duplique el esquema.
