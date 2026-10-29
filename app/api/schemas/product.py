@@ -20,10 +20,16 @@ class ProductResponse(BaseModel):
     id: int
     name: str
     section_id: int
+    section_name: str | None = None
     price: Decimal
     stock: int
     unit_of_measure: UnitOfMeasure
     image_path: str | None = None
+
+
+class ProductSectionResponse(BaseModel):
+    id: int
+    name: str
 
 
 class ProductPriceUpdateRequest(BaseModel):

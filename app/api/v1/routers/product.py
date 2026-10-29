@@ -7,12 +7,15 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.schemas.product import (
     ProductCreateRequest,
     ProductPriceUpdateRequest,
     ProductResponse,
+    ProductSectionResponse,
     ProductStockUpdateRequest,
 )
 from app.api.v1.routers.user_auth import get_current_user
@@ -25,7 +28,7 @@ from app.exceptions import (
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos import RegisterProductData
 from app.infrastructure.dtos.user import AuthenticatedUser
-from app.infrastructure.persistence.models import Product
+from app.infrastructure.persistence.models import Product, ProductSection
 from app.infrastructure.persistence.repositories.postgresql.product import ProductRepository
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -35,9 +38,9 @@ MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", "media")).resolve()
 PRODUCT_IMAGES_DIR = MEDIA_ROOT / "products"
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {
-    "image/jpeg": (".jpg",),
-    "image/png": (".png",),
-    "image/webp": (".webp",),
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
 }
 IMAGE_SIGNATURES = {
     "image/jpeg": lambda data: data.startswith(b"\xff\xd8\xff"),
@@ -64,6 +67,7 @@ def product_response(product: Product) -> ProductResponse:
         id=product.id,
         name=product.name,
         section_id=product.section_id,
+        section_name=product.section.name if product.section else None,
         price=product.price,
         stock=product.stock,
         unit_of_measure=product.unit_of_measure,
@@ -78,7 +82,6 @@ async def save_product_image(image: UploadFile) -> str:
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Formato de imagen no permitido. Usa JPEG, PNG o WebP.",
         )
-
     content = await image.read(MAX_IMAGE_BYTES + 1)
     if not content or len(content) > MAX_IMAGE_BYTES:
         raise HTTPException(
@@ -90,10 +93,8 @@ async def save_product_image(image: UploadFile) -> str:
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="El contenido del archivo no coincide con su formato de imagen.",
         )
-
     PRODUCT_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    extension = ALLOWED_IMAGE_TYPES[content_type][0]
-    filename = f"{uuid4().hex}{extension}"
+    filename = f"{uuid4().hex}{ALLOWED_IMAGE_TYPES[content_type]}"
     destination = PRODUCT_IMAGES_DIR / filename
     try:
         destination.write_bytes(content)
@@ -118,25 +119,30 @@ def remove_product_image(image_path: str | None) -> None:
         logger.exception("Unable to remove orphaned product image %s", filename)
 
 
+@router.get("/sections", response_model=list[ProductSectionResponse])
+async def list_product_sections(
+    session: Annotated[AsyncSession, Depends(get_product_session)],
+) -> list[ProductSectionResponse]:
+    sections = (await session.scalars(select(ProductSection).order_by(ProductSection.name))).all()
+    return [ProductSectionResponse(id=section.id, name=section.name) for section in sections]
+
+
 @router.get("/", response_model=list[ProductResponse])
 async def search_products(
     session: Annotated[AsyncSession, Depends(get_product_session)],
     search: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
     section_id: Annotated[int | None, Query(gt=0)] = None,
 ) -> list[ProductResponse]:
-    products = await ProductRepository(session).list_products(search, section_id)
-    return [
-        ProductResponse(
-            id=p.id,
-            name=p.name,
-            section_id=p.section_id,
-            price=p.price,
-            stock=p.stock,
-            unit_of_measure=p.unit_of_measure,
-            image_path=p.image_path,
+    stmt = select(Product).options(selectinload(Product.section)).order_by(Product.name)
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        stmt = stmt.join(ProductSection).where(
+            Product.name.ilike(term) | ProductSection.name.ilike(term)
         )
-        for p in products
-    ]
+    if section_id is not None:
+        stmt = stmt.where(Product.section_id == section_id)
+    products = (await session.scalars(stmt)).all()
+    return [product_response(p) for p in products]
 
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -161,15 +167,13 @@ async def create_product(
         )
     except Exception as exc:
         from pydantic import ValidationError
-
         if isinstance(exc, ValidationError):
             raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
         raise
 
     image_path = await save_product_image(image)
-    repository = ProductRepository(session)
     try:
-        registered = await repository.add_product(
+        registered = await ProductRepository(session).add_product(
             RegisterProductData(
                 product_name=data.name,
                 section_id=data.section_id,
@@ -180,7 +184,11 @@ async def create_product(
             )
         )
         await session.commit()
-        product = await session.get(Product, registered.id)
+        product = await session.scalar(
+            select(Product)
+            .where(Product.id == registered.id)
+            .options(selectinload(Product.section))
+        )
         if product is None:
             remove_product_image(image_path)
             raise HTTPException(status_code=500, detail="No se pudo recuperar el producto creado")
@@ -212,7 +220,9 @@ async def update_product_price(
     try:
         await ProductRepository(session).update_price(product_id, data.price)
         await session.commit()
-        product = await session.get(Product, product_id)
+        product = await session.scalar(
+            select(Product).where(Product.id == product_id).options(selectinload(Product.section))
+        )
         if product is None:
             raise HTTPException(status_code=404, detail="El producto no existe")
         return product_response(product)
@@ -232,7 +242,9 @@ async def update_product_stock(
     try:
         await ProductRepository(session).update_stock(product_id, data.stock)
         await session.commit()
-        product = await session.get(Product, product_id)
+        product = await session.scalar(
+            select(Product).where(Product.id == product_id).options(selectinload(Product.section))
+        )
         if product is None:
             raise HTTPException(status_code=404, detail="El producto no existe")
         return product_response(product)

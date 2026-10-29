@@ -78,3 +78,13 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 - El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida; producción requiere idempotencia y reconciliación/outbox.
 - La integración Stripe actual usa tokens de prueba; antes de producción, el frontend debe tokenizar con Stripe.js y el backend no debe recibir ni almacenar número completo de tarjeta ni CVV.
 - La CI no sustituye pruebas reales con credenciales de Stripe/Resend ni pruebas de carga en el entorno desplegado.
+
+
+## Contratos ampliados para los mockups
+
+- `GET /products/sections` devuelve `id` y `name` de cada sección para llenar selectores.
+- `GET /products/?search=...` busca por nombre del producto o nombre de la sección; también admite `section_id`. Los productos incluyen `section_name` e `image_path`.
+- `CheckoutRequest.shipping` recibe `street`, `neighborhood`, `department`, `details`, `delivery_instructions` (opcional), `city` y `phone_number`.
+- Los pedidos y artículos ahora incluyen nombre del cliente, datos de domicilio, teléfono e `image_path` por artículo. El recibo digital incluye los datos del comprador y el desglose subtotal/envío/total.
+- El costo de envío está actualmente fijado en COP 0.00 porque no existe una tarifa definida en los requisitos. Cambia `SHIPPING_COST` cuando se acuerde una regla de negocio; no uses el valor de presentación como fuente de verdad.
+- Para compatibilidad con registros previos, la migración agrega los nuevos campos con valores por defecto vacíos. Los pedidos antiguos no recuperan mágicamente barrio/departamento; deben actualizarse si necesitas mostrar esos datos históricos.

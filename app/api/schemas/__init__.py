@@ -19,6 +19,7 @@ from .product import (
     ProductCreateRequest,
     ProductPriceUpdateRequest,
     ProductResponse,
+    ProductSectionResponse,
     ProductStockUpdateRequest,
 )
 from .restore_code import (
@@ -50,6 +51,7 @@ __all__ = [
     "ProductCreateRequest",
     "ProductPriceUpdateRequest",
     "ProductResponse",
+    "ProductSectionResponse",
     "ProductStockUpdateRequest",
     "ShippingAddressRequest",
     "Token",

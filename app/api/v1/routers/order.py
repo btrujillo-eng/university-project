@@ -32,6 +32,7 @@ from app.infrastructure.persistence.repositories.postgresql.cart import CartRepo
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 MINIMUM_ORDER_AMOUNT = Decimal("20000.00")
+SHIPPING_COST = Decimal("0.00")  # No shipping tariff is defined in the current requirements.
 
 
 async def get_order_session() -> AsyncIterator[AsyncSession]:
@@ -45,24 +46,37 @@ def _require_role(user: AuthenticatedUser, role: UserRole) -> None:
 
 
 def _to_response(order: Order) -> OrderResponse:
+    items = [
+        OrderItemResponse(
+            product_id=item.product_id,
+            product_name=item.product.name,
+            unit_price=item.unit_price,
+            quantity=item.quantity,
+            image_path=item.product.image_path,
+        )
+        for item in order.order_items
+    ]
+    subtotal = sum((item.unit_price * item.quantity for item in order.order_items), start=Decimal("0.00"))
     return OrderResponse(
         id=order.id,
         user_id=order.user_id,
+        customer_name=order.customer_name,
         courier_id=order.courier_id,
         total_price=order.total_price,
+        subtotal=subtotal,
+        shipping_cost=SHIPPING_COST,
         delivery_status=order.delivery_status,
         payment_method=order.payment_method,
         payment_status=order.payment_status,
         created_at=order.created_at,
-        items=[
-            OrderItemResponse(
-                product_id=item.product_id,
-                product_name=item.product.name,
-                unit_price=item.unit_price,
-                quantity=item.quantity,
-            )
-            for item in order.order_items
-        ],
+        shipping_street=order.shipping_street,
+        shipping_neighborhood=order.shipping_neighborhood,
+        shipping_department=order.shipping_department,
+        shipping_details=order.shipping_details,
+        shipping_instructions=order.shipping_instructions,
+        shipping_city=order.shipping_city,
+        phone_number=order.phone_number,
+        items=items,
     )
 
 
@@ -100,7 +114,8 @@ async def checkout(
         (products_by_id[product_id].price * quantity for product_id, quantity in quantities.items()),
         start=Decimal("0.00"),
     )
-    if subtotal < MINIMUM_ORDER_AMOUNT:
+    total = subtotal + SHIPPING_COST
+    if total < MINIMUM_ORDER_AMOUNT:
         await session.rollback()
         raise HTTPException(
             status_code=422,
@@ -118,7 +133,7 @@ async def checkout(
         user_data=user_data,
         currency=TypeCurrency.COP,
         discount_type=data.discount_type,
-        transaction_amount=subtotal,
+        transaction_amount=total,
         payment_method=data.payment_method,
     )
     try:
@@ -139,14 +154,21 @@ async def checkout(
         if data.payment_method.method == PaymentMethods.CASH
         else PaymentStatus(payment.payment_status)
     )
+    customer_name = " ".join(
+        part for part in (account.first_name, account.middle_name, account.first_surname, account.middle_surname) if part
+    )
     order = Order(
         user_id=user.user_id,
+        customer_name=customer_name,
         total_price=payment.transaction_amount,
         delivery_status=DeliveryStatus.PENDING,
         payment_method=data.payment_method.method,
         payment_status=persisted_payment_status,
         shipping_street=data.shipping.street,
+        shipping_neighborhood=data.shipping.neighborhood,
+        shipping_department=data.shipping.department,
         shipping_details=data.shipping.details,
+        shipping_instructions=data.shipping.delivery_instructions,
         shipping_city=data.shipping.city,
         phone_number=data.shipping.phone_number,
     )
@@ -175,7 +197,19 @@ async def checkout(
             receipt_number=f"REC-{order.id:08d}",
             order_id=order.id,
             issued_at=datetime.now(UTC),
+            customer_name=customer_name,
+            customer_email=account.email,
+            shipping_street=order.shipping_street,
+            shipping_neighborhood=order.shipping_neighborhood,
+            shipping_department=order.shipping_department,
+            shipping_details=order.shipping_details,
+            shipping_instructions=order.shipping_instructions,
+            shipping_city=order.shipping_city,
+            phone_number=order.phone_number,
+            payment_method=order.payment_method,
             total_paid=payment.transaction_amount,
+            subtotal=subtotal,
+            shipping_cost=SHIPPING_COST,
             items=order_response.items,
         )
     return CheckoutResponse(order=order_response, payment=payment, receipt=receipt)
