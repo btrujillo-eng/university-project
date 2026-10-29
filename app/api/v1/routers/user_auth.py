@@ -5,8 +5,8 @@ from fastapi.concurrency import run_in_threadpool
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.id_token import verify_oauth2_token
-from sqlalchemy.exc import IntegrityError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from jwt import InvalidTokenError, decode
 
 from app.api.dependencies.user_auth import (
@@ -19,9 +19,8 @@ from app.domain.enums import UserRole
 from app.exceptions import AuthenticateUserError, UserIsNotActiveError
 from app.infrastructure.config import Settings, get_settings
 from app.infrastructure.database_engine import AsyncSessionLocal
-from app.infrastructure.dtos import GoogleUserData
+from app.infrastructure.dtos import AuthenticatedUser, GoogleUserData
 from app.infrastructure.unit_of_work import UnitOfWork
-from app.infrastructure.dtos import AuthenticatedUser
 from app.infrastructure.jwt_handler import create_access_token
 from app.infrastructure.persistence.repositories.postgresql import UserRepository
 
