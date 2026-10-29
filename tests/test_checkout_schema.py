@@ -56,3 +56,19 @@ def test_checkout_rejects_client_selected_discount() -> None:
     payload["discount_type"] = "black_friday"
     with pytest.raises(ValidationError):
         CheckoutRequest.model_validate(payload)
+
+
+
+def test_checkout_idempotency_key_is_required_as_a_header_not_body_field() -> None:
+    from main import app
+
+    operation = app.openapi()["paths"]["/orders/checkout"]["post"]
+    parameters = operation["parameters"]
+    idempotency_parameter = next(
+        parameter for parameter in parameters
+        if parameter["name"] == "Idempotency-Key"
+    )
+
+    assert idempotency_parameter["in"] == "header"
+    assert idempotency_parameter["required"] is True
+    assert "idempotency_key" not in CheckoutRequest.model_fields
