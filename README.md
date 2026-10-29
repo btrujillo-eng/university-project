@@ -57,7 +57,7 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 - Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
 - Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
 - Carrito: `GET /cart/`, `POST /cart/items`, `DELETE /cart/items/{product_id}`.
-- Checkout: `POST /orders/checkout`; valida stock y mínimo de COP 20.000. Es el único punto de entrada público para procesar un pago; el endpoint genérico `/payments/` se retiró para impedir que el cliente enviara importes arbitrarios fuera de un pedido validado.
+- Checkout: `POST /orders/checkout`; requiere el header `Idempotency-Key` con una clave única por intento lógico (por ejemplo, `crypto.randomUUID()`), valida stock y mínimo de COP 20.000. Stripe recibe la misma clave para evitar crear un segundo PaymentIntent si se reintenta la misma solicitud. Si el pedido ya quedó persistido, repetir la clave devuelve `409` con el ID del pedido; consulta el historial para obtener su detalle. Es el único punto de entrada público para procesar un pago; el endpoint genérico `/payments/` se retiró para impedir que el cliente enviara importes arbitrarios fuera de un pedido validado.
 - Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo. Los listados aceptan `limit` (1–100, predeterminado 50) y `offset` para paginar.
 
 Los descuentos del checkout no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`. Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
@@ -75,7 +75,7 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 
 ## Limitaciones conocidas
 
-- El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida; producción requiere idempotencia y reconciliación/outbox.
+- Stripe y PostgreSQL no comparten una transacción distribuida. El header `Idempotency-Key` evita repetir un PaymentIntent para la misma clave, incluso si la primera solicitud falla al persistir el pedido; la aplicación aún requiere reconciliación operativa de pagos huérfanos antes de producción.
 - La integración Stripe actual usa tokens de prueba; antes de producción, el frontend debe tokenizar con Stripe.js y el backend no debe recibir ni almacenar número completo de tarjeta ni CVV.
 - La CI no sustituye pruebas reales con credenciales de Stripe/Resend ni pruebas de carga en el entorno desplegado.
 
