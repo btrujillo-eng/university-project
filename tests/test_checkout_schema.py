@@ -49,3 +49,10 @@ def test_checkout_accepts_stripe_payment_method_id() -> None:
     payload["payment_method"] = {"method": "card", "payment_method_id": "pm_card_visa"}
     checkout = CheckoutRequest.model_validate(payload)
     assert checkout.payment_method.payment_method_id == "pm_card_visa"
+
+
+def test_checkout_rejects_client_selected_discount() -> None:
+    payload = _valid_checkout_payload()
+    payload["discount_type"] = "black_friday"
+    with pytest.raises(ValidationError):
+        CheckoutRequest.model_validate(payload)
