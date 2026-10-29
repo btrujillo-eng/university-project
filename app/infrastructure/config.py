@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     jwt_secret_key: SecretStr = Field(default=...)
     jwt_algorithm: str = Field(default=...)
     access_token_expire_minutes: int = Field(default=...)
+    google_client_id: str | None = None
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
     
