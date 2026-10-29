@@ -9,4 +9,4 @@ class RegisteredOrderItem:
     product_id: int
     product_name: str
     unit_price: Decimal
-    quantity: int
+    quantity: Decimal
