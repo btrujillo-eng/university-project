@@ -127,3 +127,37 @@ def test_password_login_rejects_google_only_account_without_checking_hash() -> N
     use_case = AuthenticateUserUseCase(HasherMustNotRun(), PasswordlessRepository())
     with pytest.raises(AuthenticateUserError):
         asyncio.run(use_case.authenticate("google@example.com", "any-password"))
+
+
+def test_google_login_returns_service_unavailable_when_not_configured() -> None:
+    from app.api.schemas.token import GoogleLoginRequest
+    from app.api.v1.routers.user_auth import login_with_google
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            login_with_google(
+                GoogleLoginRequest(id_token="placeholder"),
+                SimpleNamespace(google_client_id=None),
+            )
+        )
+
+    assert exc_info.value.status_code == 503
+
+
+def test_google_login_rejects_invalid_id_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.api.schemas.token import GoogleLoginRequest
+    from app.api.v1.routers import user_auth
+
+    def reject_token(*args: object, **kwargs: object) -> dict[str, object]:
+        raise ValueError("invalid token")
+
+    monkeypatch.setattr(user_auth, "verify_oauth2_token", reject_token)
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            user_auth.login_with_google(
+                GoogleLoginRequest(id_token="invalid-token"),
+                SimpleNamespace(google_client_id="test-client-id"),
+            )
+        )
+
+    assert exc_info.value.status_code == 401
