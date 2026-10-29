@@ -97,7 +97,7 @@ class FakeNotifier:
         self.last_code = code
 
 
-def make_record(*, expired=False, code_hash="hashed:1234", active=True, used=False):
+def make_record(*, expired=False, code_hash="hashed:123456", active=True, used=False):
     expiry = datetime.now(UTC) - timedelta(minutes=1) if expired else datetime.now(UTC) + timedelta(minutes=10)
     return SimpleNamespace(
         user_id=7,
@@ -119,7 +119,7 @@ def make_use_case(record=None):
 
 def test_update_password_consumes_code_and_commits_password_together():
     use_case, user_repo, restore_repo, uow, _ = make_use_case()
-    result = asyncio.run(use_case.update_password("test@example.com", "new-password", "1234"))
+    result = asyncio.run(use_case.update_password("test@example.com", "new-password", "123456"))
     assert result.first_name == "Test"
     assert restore_repo.consumed is True
     assert user_repo.updated == (7, "hashed:new-password")
@@ -129,7 +129,7 @@ def test_update_password_consumes_code_and_commits_password_together():
 def test_update_password_rejects_wrong_code_without_changing_password():
     use_case, user_repo, _, uow, _ = make_use_case()
     with pytest.raises(RestoreCodesDoNotMatchError):
-        asyncio.run(use_case.update_password("test@example.com", "new-password", "9999"))
+        asyncio.run(use_case.update_password("test@example.com", "new-password", "999999"))
     assert user_repo.updated is None
     assert uow.commits == 0
 
@@ -137,7 +137,7 @@ def test_update_password_rejects_wrong_code_without_changing_password():
 def test_update_password_rejects_expired_code():
     use_case, _, _, _, _ = make_use_case(make_record(expired=True))
     with pytest.raises(RestorationCodeHasAlreadyExpiredError):
-        asyncio.run(use_case.update_password("test@example.com", "new-password", "1234"))
+        asyncio.run(use_case.update_password("test@example.com", "new-password", "123456"))
 
 
 def test_create_restore_code_does_not_send_for_unknown_email():
@@ -153,6 +153,6 @@ def test_create_restore_code_sends_email_after_commit():
     asyncio.run(use_case.create_restore_code("test@example.com"))
     assert notifier.last_email == "test@example.com"
     assert notifier.last_code is not None
-    assert len(notifier.last_code) == 4
+    assert len(notifier.last_code) == 6
     assert restore_repo.record.code_hash == f"hashed:{notifier.last_code}"
     assert uow.commits == 1
