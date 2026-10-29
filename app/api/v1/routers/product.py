@@ -258,3 +258,6 @@ async def update_product_stock(
     except ProductDoesNotExistError as exc:
         await session.rollback()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ProductQuantityInvalidError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
