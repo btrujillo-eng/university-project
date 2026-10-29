@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,6 +44,9 @@ class CartRepository:
         product = await self.session.scalar(product_statement)
         if product is None:
             raise ProductDoesNotExistError("El producto no existe")
+
+        if product.unit_of_measure == UnitOfMeasure.UNIT and quantity != quantity.to_integral_value():
+            raise ProductQuantityInvalidError("Los productos vendidos por unidad requieren cantidades enteras")
 
         if product.unit_of_measure == UnitOfMeasure.UNIT and quantity != quantity.to_integral_value():
             raise ProductQuantityInvalidError("Los productos vendidos por unidad requieren cantidades enteras")
