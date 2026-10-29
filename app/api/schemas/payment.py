@@ -21,7 +21,7 @@ class CardPaymentDataRequest(BaseModel):
     payment_method_id: str = Field(
         min_length=4,
         max_length=100,
-        pattern=r"^pm_[A-Za-z0-9]+$",
+        pattern=r"^pm_[A-Za-z0-9_]+$",
         description="Stripe PaymentMethod ID created securely by Stripe.js; never send raw card details",
     )
 
