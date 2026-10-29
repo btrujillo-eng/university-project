@@ -1,3 +1,4 @@
+from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
@@ -13,3 +14,9 @@ def test_add_cart_item_accepts_valid_quantity() -> None:
     item = AddCartItemRequest(product_id=12, quantity=3)
     assert item.product_id == 12
     assert item.quantity == 3
+
+
+
+def test_add_cart_item_accepts_fractional_quantity() -> None:
+    request = AddCartItemRequest(product_id=1, quantity="1.500")
+    assert request.quantity == Decimal("1.500")
