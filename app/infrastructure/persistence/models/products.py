@@ -23,7 +23,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(120), unique=True)
     price: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=2))
     unit_of_measure: Mapped[UnitOfMeasure] = mapped_column(Enum(UnitOfMeasure, name='unit_of_measure', values_callable=get_enum_value))
-    stock: Mapped[int] = mapped_column(Integer)
+    stock: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=3))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(), onupdate=func.now())
     image_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
