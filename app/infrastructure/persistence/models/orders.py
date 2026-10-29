@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 class Order(Base):
     __tablename__ = "orders"
-    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_orders_idempotency_key"),)
+    __table_args__ = (UniqueConstraint("user_id", "idempotency_key", name="uq_orders_user_idempotency_key"),)
 
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
