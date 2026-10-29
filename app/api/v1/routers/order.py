@@ -90,7 +90,7 @@ async def checkout(
 ) -> CheckoutResponse:
     _require_role(user, UserRole.CUSTOMER)
     existing_order = await session.scalar(
-        select(Order).where(Order.idempotency_key == idempotency_key)
+        select(Order).where(Order.user_id == user.user_id, Order.idempotency_key == idempotency_key)
     )
     if existing_order is not None:
         if existing_order.user_id != user.user_id:
