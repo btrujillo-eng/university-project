@@ -18,7 +18,7 @@ class RegisteredProduct:
     product_name: str
     section_id: int
     price: Decimal
-    stock: int
+    stock: Decimal
     unit_of_measure: str
 
 
