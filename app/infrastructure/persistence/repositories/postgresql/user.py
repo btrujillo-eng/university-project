@@ -1,6 +1,8 @@
 import logging
 
 from sqlalchemy import select
+
+from app.domain.enums import UserRole
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,7 +58,7 @@ class UserRepository(IUserRepository):
             email=data.email,
             password_hash=None,
             google_sub=data.google_sub,
-            user_role="customer",
+            user_role=UserRole.CUSTOMER,
         )
         self.db_session.add(user)
         await self.db_session.flush()
