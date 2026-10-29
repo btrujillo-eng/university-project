@@ -52,7 +52,7 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 
 ## Endpoints principales
 
-- Usuarios: registro, inicio de sesión con correo/contraseña, inicio de sesión con Google (`POST /users/v1/auth/google`, JSON `{ "id_token": "<Google ID token>" }`) y restauración de contraseña por correo. El frontend debe obtener el ID token con Google Identity Services; el backend valida firma, audiencia y correo verificado antes de emitir su propio JWT. Las cuentas Google nuevas usan el rol `customer`. No se vincula automáticamente una cuenta existente por coincidencia de correo.
+- Usuarios: registro, inicio de sesión con correo/contraseña, inicio de sesión con Google (`POST /users/v1/auth/google`, JSON `{ "id_token": "<Google ID token>" }`) y restauración de contraseña por correo mediante un código de seis dígitos, válido durante 10 minutos. El frontend debe obtener el ID token con Google Identity Services; el backend valida firma, audiencia y correo verificado antes de emitir su propio JWT. Las cuentas Google nuevas usan el rol `customer`. No se vincula automáticamente una cuenta existente por coincidencia de correo.
 - Catálogo: `GET /products/` con filtros opcionales `search`, `section_id`, `limit` (1–100, predeterminado 50) y `offset`; `POST /products/` para el administrador de tienda.
 - Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
 - Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
