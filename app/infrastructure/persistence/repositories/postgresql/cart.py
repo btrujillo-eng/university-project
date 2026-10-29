@@ -1,9 +1,12 @@
+from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.exceptions import ProductDoesNotExistError, ProductStockInsufficientError
+from app.exceptions import ProductDoesNotExistError, ProductQuantityInvalidError, ProductStockInsufficientError
+from app.domain.enums import UnitOfMeasure
 from app.infrastructure.persistence.models.cart_items import CartItem
 from app.infrastructure.persistence.models.carts import Cart
 from app.infrastructure.persistence.models.products import Product
@@ -24,7 +27,7 @@ class CartRepository:
         statement = self._cart_statement().where(Cart.user_id == user_id).with_for_update()
         return await self.session.scalar(statement)
 
-    async def add_item(self, user_id: int, product_id: int, quantity: int) -> None:
+    async def add_item(self, user_id: int, product_id: int, quantity: Decimal) -> None:
         # Lock order is always cart first, then product, matching checkout and avoiding deadlocks.
         cart = await self.get_cart_for_update(user_id)
         if cart is None:
@@ -39,6 +42,9 @@ class CartRepository:
         product = await self.session.scalar(product_statement)
         if product is None:
             raise ProductDoesNotExistError("El producto no existe")
+
+        if product.unit_of_measure == UnitOfMeasure.UNIT and quantity != quantity.to_integral_value():
+            raise ProductQuantityInvalidError("Los productos vendidos por unidad requieren cantidades enteras")
 
         existing_item = next((item for item in cart.items if item.product_id == product_id), None)
         new_quantity = quantity + (existing_item.quantity if existing_item is not None else 0)
