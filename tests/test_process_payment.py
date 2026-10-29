@@ -88,3 +88,25 @@ def test_payment_notifies_only_after_successful_card_payment(
     assert factory.requested_method is method
     assert processor.received_data.transaction_amount == Decimal("25000.00")
     assert len(notifications.notifications) == expected_notifications
+
+
+def test_notification_failure_does_not_fail_a_successful_charge() -> None:
+    class FailingNotificationService:
+        def notify_all(self, payment_response: SimpleNamespace, payment_data: FakePaymentData) -> None:
+            raise RuntimeError("mail provider unavailable")
+
+    response = SimpleNamespace(
+        payment_status="succeeded",
+        payment_method=SimpleNamespace(method=PaymentMethods.CARD),
+        transaction_amount=Decimal("25000.00"),
+    )
+    processor = FakeProcessor(response)
+    use_case = ProcessPaymentUseCase(
+        FakeShoppingCart(),
+        FakeFactory(processor),
+        FailingNotificationService(),
+    )
+
+    result = asyncio.run(use_case.process(FakePaymentData(PaymentMethods.CARD, Decimal("25000.00"))))
+
+    assert result is response
