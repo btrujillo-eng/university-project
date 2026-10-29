@@ -2,116 +2,79 @@
 
 Backend REST para la tienda de legumbrería Canasta Express. Está construido con FastAPI, Pydantic, SQLAlchemy asíncrono y PostgreSQL.
 
-## Requisitos
+## Requisitos y configuración
 
-- Python 3.13
-- PostgreSQL
-- Claves de Stripe y Resend para probar los flujos externos de pago y correo
+- Python 3.13 y PostgreSQL.
+- Claves de prueba de Stripe y Resend para probar las integraciones externas.
+- Instala dependencias con `python -m pip install -r requirements-prod.txt -r requirements-dev.txt`.
+- Configura en `.env` las variables de base de datos, Stripe, Resend y JWT. No subas secretos al repositorio.
+- En una base vacía, ejecuta `alembic upgrade head`; después inicia con `uvicorn main:app --reload`.
+- La documentación interactiva queda en `/docs`.
 
-## Configuración local
+## Imágenes de productos y Docker
 
-1. Crear y activar un entorno virtual.
-2. Instalar dependencias:
+El endpoint de creación de productos recibe ahora un formulario `multipart/form-data` con los campos `name`, `section_id`, `price`, `stock`, `unit_of_measure` y el archivo obligatorio `image`. Solo acepta JPEG, PNG o WebP hasta 5 MiB. El backend genera un nombre aleatorio, guarda la imagen en `MEDIA_ROOT/products` y persiste en `Product.image_path` la ruta pública, por ejemplo `/media/products/ab12....webp`. El cliente puede usar esa ruta como `src` de la imagen del producto; el backend sirve el archivo en `GET /media/products/{filename}`.
 
-   ```bash
-   python -m pip install -r requirements-prod.txt -r requirements-dev.txt
-   ```
+Por defecto `MEDIA_ROOT=media`. En Docker, monta un volumen persistente en la ruta que configures como `MEDIA_ROOT`, por ejemplo:
 
-3. Crear un archivo `.env` con las variables requeridas:
+```yaml
+services:
+  api:
+    environment:
+      MEDIA_ROOT: /app/media
+    volumes:
+      - product_media:/app/media
 
-   ```dotenv
-   STRIPE_API_KEY=sk_test_...
-   RESEND_API_KEY=re_...
-   DEBUG=false
-   MIGRATOR_DB_URL=postgresql+psycopg://usuario_migraciones:contraseña@localhost:5432/canasta_express
-   DB_USER=usuario_app
-   DB_PASSWORD=contraseña_app
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=canasta_express
-   JWT_SECRET_KEY=cambiar-por-un-secreto-largo
-   JWT_ALGORITHM=HS256
-   ACCESS_TOKEN_EXPIRE_MINUTES=30
-   ```
+volumes:
+  product_media:
+```
 
-   Usa claves de prueba para Stripe y Resend. No subas el archivo `.env` al repositorio.
+El volumen debe persistir entre recreaciones de contenedores y ser compartido por todas las réplicas que sirvan imágenes. Haz backup de ese volumen. No montes la carpeta de imágenes en un directorio público de escritura arbitraria. Las imágenes existentes deben migrarse al volumen antes de desplegar si ya hay registros con rutas guardadas.
 
-4. En una base de datos vacía, aplicar la migración inicial:
+Ejemplo de creación desde el navegador:
 
-   ```bash
-   alembic upgrade head
-   ```
+```javascript
+const form = new FormData();
+form.append("name", "Tomate chonto");
+form.append("section_id", "1");
+form.append("price", "4500.00");
+form.append("stock", "20");
+form.append("unit_of_measure", "kilogram");
+form.append("image", selectedFile);
+const response = await fetch("/products/", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: form
+});
+```
 
-   Si la base de datos ya contiene exactamente el esquema inicial, revisa primero su estructura; no ejecutes la migración inicial encima de tablas existentes. Si el esquema existente coincide, se puede registrar el estado inicial con `alembic stamp head`.
+No establezcas manualmente el header `Content-Type`: el navegador debe agregar el boundary del multipart.
 
-5. Iniciar la API:
+## Endpoints principales
 
-   ```bash
-   uvicorn main:app --reload
-   ```
+- Usuarios: registro, inicio de sesión JWT y restauración de contraseña por correo.
+- Catálogo: `GET /products/` con filtros opcionales `search` y `section_id`; `POST /products/` para el administrador de tienda.
+- Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
+- Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
+- Carrito: `GET /cart/`, `POST /cart/items`, `DELETE /cart/items/{product_id}`.
+- Checkout: `POST /orders/checkout`; valida stock y mínimo de COP 20.000.
+- Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo.
 
-La documentación interactiva de la API estará disponible en `/docs`.
-
-## Funcionalidades implementadas
-
-### Usuarios y autenticación
-
-- Registro e inicio de sesión con JWT.
-- Restauración de contraseña por código enviado por correo.
-- La respuesta al solicitar un código no revela si el correo está registrado.
-
-### Catálogo e inventario
-
-- `GET /products/`: listar productos; acepta `search` para buscar por nombre y `section_id` para filtrar por sección.
-- `POST /products/`: registrar producto (administrador de tienda).
-- `PATCH /products/{product_id}/price`: actualizar precio (administrador de tienda).
-- `PATCH /products/{product_id}/stock`: actualizar stock (administrador de bodega).
-
-### Carrito
-
-- `GET /cart/`: consultar productos y total calculado con precios actuales.
-- `POST /cart/items`: agregar una cantidad al carrito del cliente autenticado.
-- `DELETE /cart/items/{product_id}`: eliminar un producto del carrito.
-- El servidor valida cantidades positivas y disponibilidad de stock.
-
-### Checkout, pagos y pedidos
-
-- `POST /orders/checkout`: validar el carrito, comprobar stock bajo bloqueo transaccional, exigir un mínimo de COP 20.000, registrar dirección de entrega y procesar tarjeta o efectivo.
-- El pago en efectivo queda pendiente y devuelve instrucciones para pagar al recibir el pedido.
-- Para pagos con tarjeta aprobados, la respuesta incluye un recibo digital; no se genera recibo cuando el pago con tarjeta falla.
-- `GET /orders/me`: historial del cliente autenticado.
-- `GET /orders/packaging` y `GET /orders/packaging/pending`: consulta de pedidos por el personal de empaque.
-- `POST /orders/{order_id}/packaged`: confirmar empaque.
-- `POST /orders/{order_id}/assign-courier/{courier_id}`: asignar un pedido empacado a un domiciliario.
-- `GET /orders/courier/assigned`: pedidos asignados al domiciliario autenticado.
-- `PATCH /orders/{order_id}/delivery-status?new_status=in_transit`: registrar salida a entrega; después se puede usar `new_status=delivered`.
-- `PATCH /orders/{order_id}/cash-payment`: confirmar pago en efectivo recibido por el domiciliario.
-
-Los endpoints protegidos verifican el JWT y el rol correspondiente. Los cambios de estado de entrega siguen transiciones permitidas y los domiciliarios solo pueden modificar pedidos asignados a ellos.
+Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
 
 ## Pruebas y CI
-
-Ejecutar las pruebas automatizadas localmente:
 
 ```bash
 python -m compileall -q app tests main.py scripts
 python -m pytest -q
 ```
 
-GitHub Actions ejecuta compilación, importación de la aplicación y configuración de mapeos ORM, migración contra PostgreSQL temporal y pruebas unitarias en cada push a la rama de trabajo.
+GitHub Actions compila, importa la API, ejecuta la migración contra PostgreSQL temporal y ejecuta las pruebas automatizadas.
 
-### Prueba de rendimiento de registro e inicio de sesión
-
-Con una base de datos de pruebas y la API levantada, ejecutar:
-
-```bash
-python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3
-```
-
-El script crea cuentas con correos únicos en cada corrida, mide registro e inicio de sesión concurrentes y valida que todas las respuestas sean exitosas y que el percentil 95 de latencia sea de 3 segundos o menos. Úsalo únicamente en un entorno de pruebas, porque crea cuentas persistentes. El objetivo de rendimiento no se considera verificado hasta ejecutar el script contra el entorno objetivo y guardar sus resultados.
+Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3`. El script crea cuentas persistentes y debe usarse solo con una base desechable.
 
 ## Limitaciones conocidas
 
-- El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida. Para producción conviene implementar idempotencia de pagos y un patrón outbox/reconciliación para gestionar el caso excepcional en que Stripe apruebe el cobro pero falle la persistencia posterior.
-- La integración actual de Stripe usa tokens de prueba por red de tarjeta. Antes de producción, el frontend debe tokenizar los datos con Stripe.js y el backend no debe recibir ni almacenar el número completo ni el CVV.
-- Las pruebas automatizadas actuales no sustituyen una prueba de integración real con credenciales de Stripe/Resend ni una medición de rendimiento ejecutada contra un entorno desplegado.
+- El cobro con Stripe y la persistencia del pedido no comparten una transacción distribuida; producción requiere idempotencia y reconciliación/outbox.
+- La integración Stripe actual usa tokens de prueba; antes de producción, el frontend debe tokenizar con Stripe.js y el backend no debe recibir ni almacenar número completo de tarjeta ni CVV.
+- La CI no sustituye pruebas reales con credenciales de Stripe/Resend ni pruebas de carga en el entorno desplegado.

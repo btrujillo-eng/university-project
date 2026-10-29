@@ -1,4 +1,8 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.routers import (
     cart,
@@ -12,6 +16,10 @@ from app.api.v1.routers import (
 )
 
 app = FastAPI(title="E-commerce of legumes", version="1.0.0")
+
+media_root = Path(os.getenv("MEDIA_ROOT", "media")).resolve()
+media_root.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_root), name="media")
 
 app.include_router(payment.router)
 app.include_router(product.router)

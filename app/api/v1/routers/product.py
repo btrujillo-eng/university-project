@@ -1,7 +1,12 @@
+import logging
+import os
+import re
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Annotated
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.product import (
@@ -11,7 +16,7 @@ from app.api.schemas.product import (
     ProductStockUpdateRequest,
 )
 from app.api.v1.routers.user_auth import get_current_user
-from app.domain.enums import UserRole
+from app.domain.enums import UnitOfMeasure, UserRole
 from app.exceptions import (
     ProductAlreadyExistsError,
     ProductDoesNotExistError,
@@ -24,6 +29,21 @@ from app.infrastructure.persistence.models import Product
 from app.infrastructure.persistence.repositories.postgresql.product import ProductRepository
 
 router = APIRouter(prefix="/products", tags=["products"])
+logger = logging.getLogger(__name__)
+
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", "media")).resolve()
+PRODUCT_IMAGES_DIR = MEDIA_ROOT / "products"
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": (".jpg",),
+    "image/png": (".png",),
+    "image/webp": (".webp",),
+}
+IMAGE_SIGNATURES = {
+    "image/jpeg": lambda data: data.startswith(b"\xff\xd8\xff"),
+    "image/png": lambda data: data.startswith(b"\x89PNG\r\n\x1a\n"),
+    "image/webp": lambda data: len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP",
+}
 
 
 async def get_product_session() -> AsyncIterator[AsyncSession]:
@@ -51,6 +71,53 @@ def product_response(product: Product) -> ProductResponse:
     )
 
 
+async def save_product_image(image: UploadFile) -> str:
+    content_type = (image.content_type or "").lower()
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Formato de imagen no permitido. Usa JPEG, PNG o WebP.",
+        )
+
+    content = await image.read(MAX_IMAGE_BYTES + 1)
+    if not content or len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="La imagen debe pesar entre 1 byte y 5 MB.",
+        )
+    if not IMAGE_SIGNATURES[content_type](content):
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="El contenido del archivo no coincide con su formato de imagen.",
+        )
+
+    PRODUCT_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    extension = ALLOWED_IMAGE_TYPES[content_type][0]
+    filename = f"{uuid4().hex}{extension}"
+    destination = PRODUCT_IMAGES_DIR / filename
+    try:
+        destination.write_bytes(content)
+    except OSError as exc:
+        logger.exception("Unable to save product image")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No fue posible guardar la imagen del producto.",
+        ) from exc
+    return f"/media/products/{filename}"
+
+
+def remove_product_image(image_path: str | None) -> None:
+    if not image_path or not image_path.startswith("/media/products/"):
+        return
+    filename = image_path.rsplit("/", maxsplit=1)[-1]
+    if not re.fullmatch(r"[0-9a-f]{32}\.(jpg|png|webp)", filename):
+        return
+    try:
+        (PRODUCT_IMAGES_DIR / filename).unlink(missing_ok=True)
+    except OSError:
+        logger.exception("Unable to remove orphaned product image %s", filename)
+
+
 @router.get("/", response_model=list[ProductResponse])
 async def search_products(
     session: Annotated[AsyncSession, Depends(get_product_session)],
@@ -74,11 +141,32 @@ async def search_products(
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    data: ProductCreateRequest,
+    name: Annotated[str, Form(min_length=2, max_length=120)],
+    section_id: Annotated[int, Form(gt=0)],
+    price: Annotated[str, Form()],
+    stock: Annotated[int, Form(ge=0)],
+    unit_of_measure: Annotated[UnitOfMeasure, Form()],
+    image: Annotated[UploadFile, File()],
     session: Annotated[AsyncSession, Depends(get_product_session)],
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> ProductResponse:
     require_role(user, UserRole.STORE_MANAGER)
+    try:
+        data = ProductCreateRequest(
+            name=name,
+            section_id=section_id,
+            price=price,
+            stock=stock,
+            unit_of_measure=unit_of_measure,
+        )
+    except Exception as exc:
+        from pydantic import ValidationError
+
+        if isinstance(exc, ValidationError):
+            raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
+        raise
+
+    image_path = await save_product_image(image)
     repository = ProductRepository(session)
     try:
         registered = await repository.add_product(
@@ -88,20 +176,29 @@ async def create_product(
                 price=data.price,
                 stock=data.stock,
                 unit_of_measure=data.unit_of_measure.value,
-                image_path=data.image_path,
+                image_path=image_path,
             )
         )
         await session.commit()
         product = await session.get(Product, registered.id)
         if product is None:
+            remove_product_image(image_path)
             raise HTTPException(status_code=500, detail="No se pudo recuperar el producto creado")
         return product_response(product)
-    except ProductAlreadyExistsError as e:
+    except ProductAlreadyExistsError as exc:
         await session.rollback()
-        raise HTTPException(status_code=409, detail=str(e)) from e
-    except ProductRegistrationServiceError as e:
+        remove_product_image(image_path)
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ProductRegistrationServiceError as exc:
         await session.rollback()
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        remove_product_image(image_path)
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception:
+        await session.rollback()
+        remove_product_image(image_path)
+        raise
+    finally:
+        await image.close()
 
 
 @router.patch("/{product_id}/price", response_model=ProductResponse)
@@ -119,9 +216,9 @@ async def update_product_price(
         if product is None:
             raise HTTPException(status_code=404, detail="El producto no existe")
         return product_response(product)
-    except ProductDoesNotExistError as e:
+    except ProductDoesNotExistError as exc:
         await session.rollback()
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.patch("/{product_id}/stock", response_model=ProductResponse)
@@ -139,6 +236,6 @@ async def update_product_stock(
         if product is None:
             raise HTTPException(status_code=404, detail="El producto no existe")
         return product_response(product)
-    except ProductDoesNotExistError as e:
+    except ProductDoesNotExistError as exc:
         await session.rollback()
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
