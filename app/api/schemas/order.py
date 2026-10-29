@@ -4,10 +4,11 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.payment import PaymentMethodRequest, PaymentResponse
-from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus
+from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus
 
 
 class ShippingAddressRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     street: str = Field(min_length=4, max_length=80)
     neighborhood: str = Field(min_length=2, max_length=60)
     department: str = Field(min_length=2, max_length=60)
@@ -22,7 +23,7 @@ class CheckoutRequest(BaseModel):
 
     shipping: ShippingAddressRequest
     payment_method: PaymentMethodRequest
-    discount_type: str = "no_aplica"
+    discount_type: DiscountStrategy = DiscountStrategy.NODISCOUNT
 
 
 class OrderItemResponse(BaseModel):
