@@ -132,6 +132,8 @@ async def search_products(
     session: Annotated[AsyncSession, Depends(get_product_session)],
     search: Annotated[str | None, Query(min_length=1, max_length=120)] = None,
     section_id: Annotated[int | None, Query(gt=0)] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[ProductResponse]:
     stmt = select(Product).options(selectinload(Product.section)).order_by(Product.name)
     if search and search.strip():
@@ -141,6 +143,7 @@ async def search_products(
         )
     if section_id is not None:
         stmt = stmt.where(Product.section_id == section_id)
+    stmt = stmt.limit(limit).offset(offset)
     products = (await session.scalars(stmt)).all()
     return [product_response(p) for p in products]
 
