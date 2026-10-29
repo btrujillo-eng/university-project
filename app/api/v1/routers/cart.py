@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.cart import AddCartItemRequest, CartItemResponse, CartResponse
 from app.api.v1.routers.user_auth import get_current_user
 from app.domain.enums import UserRole
-from app.exceptions import ProductDoesNotExistError, ProductStockInsufficientError
+from app.exceptions import ProductDoesNotExistError, ProductQuantityInvalidError, ProductStockInsufficientError
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
 from app.infrastructure.persistence.models.carts import Cart
@@ -73,6 +73,9 @@ async def add_cart_item(
     except ProductStockInsufficientError as e:
         await session.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except ProductQuantityInvalidError as e:
+        await session.rollback()
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.delete("/items/{product_id}", response_model=CartResponse)
