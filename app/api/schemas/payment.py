@@ -41,6 +41,7 @@ class PaymentDataRequest(BaseModel):
     )
     transaction_amount: Annotated[TransactionAmount, Field(description="Total payment amount")]
     payment_method: PaymentMethodRequest
+    idempotency_key: str | None = Field(default=None, min_length=16, max_length=255, description="Internal checkout key forwarded to Stripe for safe retries")
 
 
 class CardPaymentResponse(BaseModel):
