@@ -34,8 +34,7 @@ class UserCreateRequest(BaseModel):
     first_surname: Surname = Field(description="User's first surname")
     middle_surname: Surname | None = Field(description="User's middle surname", default=None)
     contact_info: ContactInfoRequest = Field(description="User's contact info")
-    password: SecretStr
-
+    password: SecretStr = Field(min_length=8, max_length=128, description="Password; at least 8 characters")
 
 class UserResponse(BaseModel):
     user_id: int = Field(description="User's id")
