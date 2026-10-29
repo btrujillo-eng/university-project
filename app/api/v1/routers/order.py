@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -219,9 +219,11 @@ async def checkout(
 async def get_my_orders(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.CUSTOMER)
-    orders = await OrderRepository(session).get_customer_orders(user.user_id)
+    orders = await OrderRepository(session).get_customer_orders(user.user_id, limit, offset)
     return [_to_response(order) for order in orders]
 
 
@@ -229,9 +231,11 @@ async def get_my_orders(
 async def get_orders_for_packaging(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.PACKAGING_MANAGER)
-    orders = await OrderRepository(session).list_all()
+    orders = await OrderRepository(session).list_all(limit, offset)
     return [_to_response(order) for order in orders]
 
 
@@ -239,9 +243,11 @@ async def get_orders_for_packaging(
 async def get_orders_pending_packaging(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.PACKAGING_MANAGER)
-    orders = await OrderRepository(session).list_by_delivery_status(DeliveryStatus.PENDING)
+    orders = await OrderRepository(session).list_by_delivery_status(DeliveryStatus.PENDING, limit, offset)
     return [_to_response(order) for order in orders]
 
 
@@ -288,9 +294,11 @@ async def assign_courier(
 async def get_assigned_orders(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.COURIER)
-    orders = await OrderRepository(session).list_for_courier(user.user_id)
+    orders = await OrderRepository(session).list_for_courier(user.user_id, limit, offset)
     return [_to_response(order) for order in orders]
 
 
