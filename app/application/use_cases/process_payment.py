@@ -1,6 +1,11 @@
+import logging
+
 from app.api.schemas import PaymentDataRequest, PaymentResponse
+from app.exceptions import NotificationServiceError
 from app.domain.enums import PaymentMethods
 from app.domain.ports import INotificationService, IPaymentMethodFactory, IShoppingCart
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessPaymentUseCase:
@@ -28,5 +33,10 @@ class ProcessPaymentUseCase:
             payment_response.payment_method.method == PaymentMethods.CARD
             and payment_response.payment_status == "succeeded"
         ):
-            self.notification_service.notify_all(payment_response, data)
+            try:
+                self.notification_service.notify_all(payment_response, data)
+            except Exception:
+                # A notification failure must never turn a successful charge into
+                # an API failure; callers could otherwise retry and be charged twice.
+                logger.exception("Payment succeeded but customer notification failed")
         return payment_response
