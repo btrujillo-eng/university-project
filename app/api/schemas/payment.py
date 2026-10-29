@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 from app.api.schemas.user import UserDataRequest
-from app.domain.enums import PaymentMethods, TypeCurrency
+from app.domain.enums import DiscountStrategy, PaymentMethods, TypeCurrency
 
 TransactionAmount = Annotated[Decimal, Field(gt=0, decimal_places=2)]
 Currency = Annotated[TypeCurrency, Field(description="Currency code")]
@@ -35,8 +35,9 @@ PaymentMethodRequest = Annotated[
 class PaymentDataRequest(BaseModel):
     user_data: UserDataRequest = Field(description="User's information")
     currency: Currency = TypeCurrency.COP
-    discount_type: str = Field(
-        description="Discount type. Supported values: no_aplica, navidad, fijo, black_friday"
+    discount_type: DiscountStrategy = Field(
+        default=DiscountStrategy.NODISCOUNT,
+        description="Discount strategy supported by the application",
     )
     transaction_amount: Annotated[TransactionAmount, Field(description="Total payment amount")]
     payment_method: PaymentMethodRequest
