@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import UnitOfMeasure
 
@@ -14,12 +14,6 @@ class ProductCreateRequest(BaseModel):
     stock: Decimal = Field(ge=0, max_digits=10, decimal_places=3)
     unit_of_measure: UnitOfMeasure
     image_path: str | None = Field(default=None, max_length=255)
-
-    @model_validator(mode="after")
-    def validate_unit_stock(self):
-        if self.unit_of_measure == UnitOfMeasure.UNIT and self.stock != self.stock.to_integral_value():
-            raise ValueError("El stock de productos por unidad debe ser un número entero")
-        return self
 
     @model_validator(mode="after")
     def validate_unit_stock(self):
