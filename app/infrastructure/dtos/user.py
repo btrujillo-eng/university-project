@@ -27,7 +27,7 @@ class UserForAuthentication:
     user_id: int
     first_name: str
     first_surname: str
-    password_hash: str
+    password_hash: str | None
     user_role: str
     is_active: bool
 
@@ -41,5 +41,11 @@ class AuthenticatedUser:
 
 @dataclass(frozen=True, slots=True)     
 class UpdatedUserInfo:
+    first_name: str
+    first_surname: str
+@dataclass(frozen=True, slots=True)
+class GoogleUserData:
+    email: str
+    google_sub: str
     first_name: str
     first_surname: str
