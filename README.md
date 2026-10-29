@@ -88,3 +88,8 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 - Los pedidos y artículos ahora incluyen nombre del cliente, datos de domicilio, teléfono e `image_path` por artículo. El recibo digital incluye los datos del comprador y el desglose subtotal/envío/total.
 - El costo de envío está actualmente fijado en COP 0.00 porque no existe una tarifa definida en los requisitos. Cambia `SHIPPING_COST` cuando se acuerde una regla de negocio; no uses el valor de presentación como fuente de verdad.
 - Para compatibilidad con registros previos, la migración agrega los nuevos campos con valores por defecto vacíos. Los pedidos antiguos no recuperan mágicamente barrio/departamento; deben actualizarse si necesitas mostrar esos datos históricos.
+
+
+### Integración segura de tarjeta
+
+El checkout con tarjeta recibe `payment_method_id` de Stripe (un ID `pm_...` generado mediante Stripe.js/Elements en el navegador). No envíes `card_number` ni `cvv` al backend. El gateway crea un PaymentIntent y registra en la respuesta únicamente la marca y los últimos cuatro dígitos de la tarjeta. La integración debe probarse con claves y métodos de pago de prueba de Stripe antes de conectar el frontend.
