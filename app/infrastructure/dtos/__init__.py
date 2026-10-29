@@ -14,6 +14,7 @@ from app.infrastructure.dtos.restore_code import (
 )
 from app.infrastructure.dtos.user import (
     AuthenticatedUser,
+    GoogleUserData,
     RegisteredUserData,
     RegisterUserData,
     UpdatedUserInfo,
@@ -23,6 +24,7 @@ from app.infrastructure.dtos.user import (
 __all__ = [
     "AuthenticatedUser",
     "GeneratedRestoreCode",
+    "GoogleUserData",
     "OrderData",
     "OrderItemSummary",
     "OrderSummary",
