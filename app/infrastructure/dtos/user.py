@@ -30,6 +30,7 @@ class UserForAuthentication:
     password_hash: str | None
     user_role: str
     is_active: bool
+    google_sub: str | None = None
 
 @dataclass(frozen=True, slots=True)   
 class AuthenticatedUser:
