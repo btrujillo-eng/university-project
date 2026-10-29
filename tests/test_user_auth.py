@@ -102,3 +102,28 @@ def test_current_user_rejects_inactive_account() -> None:
 
     assert exc_info.value.status_code == 403
     assert repository.requested_user_id == 7
+
+
+def test_password_login_rejects_google_only_account_without_checking_hash() -> None:
+    from app.application.use_cases.authenticate_user import AuthenticateUserUseCase
+    from app.exceptions import AuthenticateUserError
+
+    class PasswordlessRepository:
+        async def get_user_by_email(self, email: str) -> UserForAuthentication:
+            return UserForAuthentication(
+                user_id=8,
+                first_name="Google",
+                first_surname="Usuario",
+                password_hash=None,
+                user_role="customer",
+                is_active=True,
+                google_sub="google-subject",
+            )
+
+    class HasherMustNotRun:
+        def check_hash(self, password_hash: str, password: str) -> bool:
+            raise AssertionError("Hasher must not receive a missing password hash")
+
+    use_case = AuthenticateUserUseCase(HasherMustNotRun(), PasswordlessRepository())
+    with pytest.raises(AuthenticateUserError):
+        asyncio.run(use_case.authenticate("google@example.com", "any-password"))
