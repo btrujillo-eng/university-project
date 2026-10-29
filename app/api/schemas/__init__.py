@@ -28,7 +28,7 @@ from .restore_code import (
     UpdatePasswordRequest,
     VerifyRestoreCodeRequest,
 )
-from .token import Token, TokenData
+from .token import GoogleLoginRequest, Token, TokenData
 from .user import UserCreateRequest, UserDataRequest, UserRegistrationResponse, UserResponse
 
 __all__ = [
