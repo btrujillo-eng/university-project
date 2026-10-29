@@ -13,6 +13,9 @@ class AuthenticateUserUseCase:
         if not user:
             raise AuthenticateUserError("Denegated access to the system")
         
+        if user.password_hash is None:
+            raise AuthenticateUserError("Denegated access to the system")
+
         is_correct = self.password_hasher.check_hash(user.password_hash, password)
         if not is_correct:
             raise AuthenticateUserError("Denegated access to the system")
