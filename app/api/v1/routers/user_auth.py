@@ -1,6 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
+from google.auth.exceptions import GoogleAuthError
+from google.auth.transport.requests import Request as GoogleRequest
+from google.oauth2.id_token import verify_oauth2_token
+from sqlalchemy.exc import IntegrityError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import InvalidTokenError, decode
 
@@ -8,11 +13,14 @@ from app.api.dependencies.user_auth import (
     get_authenticate_user,
     get_user_repository,
 )
-from app.api.schemas import Token, UserResponse
+from app.api.schemas import GoogleLoginRequest, Token, UserResponse
 from app.application import AuthenticateUserUseCase
 from app.domain.enums import UserRole
 from app.exceptions import AuthenticateUserError, UserIsNotActiveError
 from app.infrastructure.config import Settings, get_settings
+from app.infrastructure.database_engine import AsyncSessionLocal
+from app.infrastructure.dtos import GoogleUserData
+from app.infrastructure.unit_of_work import UnitOfWork
 from app.infrastructure.dtos import AuthenticatedUser
 from app.infrastructure.jwt_handler import create_access_token
 from app.infrastructure.persistence.repositories.postgresql import UserRepository
@@ -68,6 +76,86 @@ async def get_current_user(
 
 
 router_login = APIRouter(prefix="/users", tags=["token"])
+
+
+@router_login.post("/v1/auth/google", response_model=Token)
+async def login_with_google(
+    request_data: GoogleLoginRequest,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> Token:
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="El inicio de sesión con Google no está configurado.",
+        )
+
+    try:
+        claims = await run_in_threadpool(
+            verify_oauth2_token,
+            request_data.id_token,
+            GoogleRequest(),
+            settings.google_client_id,
+        )
+    except (ValueError, GoogleAuthError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="El token de Google no es válido.",
+        ) from None
+
+    email = claims.get("email")
+    google_sub = claims.get("sub")
+    if (
+        not isinstance(email, str)
+        or not isinstance(google_sub, str)
+        or claims.get("email_verified") is not True
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google no confirmó la identidad y el correo de la cuenta.",
+        )
+
+    given_name = claims.get("given_name")
+    family_name = claims.get("family_name")
+    first_name = given_name.strip() if isinstance(given_name, str) else "Google"
+    first_surname = family_name.strip() if isinstance(family_name, str) else "Usuario"
+    first_name = first_name[:20] or "Google"
+    first_surname = first_surname[:20] or "Usuario"
+
+    try:
+        async with UnitOfWork(AsyncSessionLocal) as uow:
+            assert uow.user is not None
+            user = await uow.user.get_user_by_google_sub(google_sub)
+            if user is None:
+                existing_email_user = await uow.user.get_user_by_email(email)
+                if existing_email_user is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            "Ya existe una cuenta con este correo. Inicia sesión "
+                            "con tu método habitual antes de vincular Google."
+                        ),
+                    )
+                user = await uow.user.add_google_user(
+                    GoogleUserData(
+                        email=email,
+                        google_sub=google_sub,
+                        first_name=first_name,
+                        first_surname=first_surname,
+                    )
+                )
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Tu usuario está inactivo. Por favor, contacta con soporte.",
+                )
+            await uow.commit()
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No fue posible crear la cuenta de Google. Inténtalo de nuevo.",
+        ) from None
+
+    return Token(access_token=create_access_token(user.user_id))
 
 
 @router_login.post("/v1/auth/token", response_model=Token)
