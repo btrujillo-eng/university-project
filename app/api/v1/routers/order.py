@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,8 +86,20 @@ async def checkout(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
     payment_use_case: Annotated[ProcessPaymentUseCase, Depends(get_process_payment)],
+    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=16, max_length=255)],
 ) -> CheckoutResponse:
     _require_role(user, UserRole.CUSTOMER)
+    existing_order = await session.scalar(
+        select(Order).where(Order.idempotency_key == idempotency_key)
+    )
+    if existing_order is not None:
+        if existing_order.user_id != user.user_id:
+            raise HTTPException(status_code=409, detail="La clave de idempotencia ya fue utilizada")
+        raise HTTPException(
+            status_code=409,
+            detail={"message": "Este checkout ya fue registrado. Consulta tu historial de pedidos.", "order_id": existing_order.id},
+        )
+
     account = await session.get(User, user.user_id)
     if account is None:
         raise HTTPException(status_code=401, detail="La cuenta autenticada ya no existe")
@@ -135,6 +147,7 @@ async def checkout(
         discount_type=DiscountStrategy.NODISCOUNT.value,
         transaction_amount=total,
         payment_method=data.payment_method,
+        idempotency_key=f"checkout-{user.user_id}-{idempotency_key}",
     )
     try:
         payment = await payment_use_case.process(payment_data)
@@ -159,6 +172,7 @@ async def checkout(
     )
     order = Order(
         user_id=user.user_id,
+        idempotency_key=idempotency_key,
         customer_name=customer_name,
         total_price=payment.transaction_amount,
         delivery_status=DeliveryStatus.PENDING,
