@@ -30,6 +30,7 @@ class CartRepository:
         return await self.session.scalar(statement)
 
     async def add_item(self, user_id: int, product_id: int, quantity: Decimal) -> None:
+        quantity = Decimal(str(quantity))
         # Lock order is always cart first, then product, matching checkout and avoiding deadlocks.
         cart = await self.get_cart_for_update(user_id)
         if cart is None:
