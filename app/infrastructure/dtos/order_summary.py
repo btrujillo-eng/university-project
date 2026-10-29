@@ -8,7 +8,7 @@ class OrderItemSummary:
     product_id: int
     product_name: str
     unit_price: Decimal
-    quantity: int
+    quantity: Decimal
 
 
 @dataclass(frozen=True, slots=True)
