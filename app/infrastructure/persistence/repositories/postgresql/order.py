@@ -22,7 +22,7 @@ class OrderRepository(IOrderRepository):
         return await self.session.scalar(statement)
 
     async def get_customer_orders(self, user_id: int, limit: int = 50, offset: int = 0) -> list[Order]:
-        statement = self._base_statement().where(Order.user_id == user_id).order_by(Order.created_at.desc()).limit(limit).offset(offset)
+        statement = self._base_statement().where(Order.user_id == user_id).order_by(Order.created_at.desc(), Order.id.desc()).limit(limit).offset(offset)
         return list((await self.session.scalars(statement)).all())
 
     async def list_all(self, limit: int = 50, offset: int = 0) -> list[Order]:
@@ -30,7 +30,7 @@ class OrderRepository(IOrderRepository):
         return list((await self.session.scalars(statement)).all())
 
     async def list_by_delivery_status(self, status: DeliveryStatus, limit: int = 50, offset: int = 0) -> list[Order]:
-        statement = self._base_statement().where(Order.delivery_status == status).order_by(Order.created_at.asc()).limit(limit).offset(offset)
+        statement = self._base_statement().where(Order.delivery_status == status).order_by(Order.created_at.asc(), Order.id.asc()).limit(limit).offset(offset)
         return list((await self.session.scalars(statement)).all())
 
     async def list_for_courier(self, courier_id: int, limit: int = 50, offset: int = 0) -> list[Order]:
