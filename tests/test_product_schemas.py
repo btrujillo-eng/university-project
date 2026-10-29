@@ -61,3 +61,8 @@ def test_product_create_rejects_fractional_stock_for_unit_products() -> None:
             stock="2.500",
             unit_of_measure="unit",
         )
+
+
+
+def test_product_stock_update_accepts_fractional_stock() -> None:
+    assert ProductStockUpdateRequest(stock="12.500").stock == Decimal("12.500")
