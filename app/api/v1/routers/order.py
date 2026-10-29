@@ -20,7 +20,7 @@ from app.api.schemas.payment import PaymentDataRequest
 from app.api.schemas.user import ContactInfoRequest, UserDataRequest
 from app.api.v1.routers.user_auth import get_current_user
 from app.application import ProcessPaymentUseCase
-from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
+from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
 from app.domain.ports.order_repository import IOrderRepository
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
@@ -132,7 +132,7 @@ async def checkout(
     payment_data = PaymentDataRequest(
         user_data=user_data,
         currency=TypeCurrency.COP,
-        discount_type=data.discount_type,
+        discount_type=DiscountStrategy.NODISCOUNT.value,
         transaction_amount=total,
         payment_method=data.payment_method,
     )
