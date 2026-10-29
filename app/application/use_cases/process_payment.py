@@ -1,7 +1,6 @@
 import logging
 
 from app.api.schemas import PaymentDataRequest, PaymentResponse
-from app.exceptions import NotificationServiceError
 from app.domain.enums import PaymentMethods
 from app.domain.ports import INotificationService, IPaymentMethodFactory, IShoppingCart
 
