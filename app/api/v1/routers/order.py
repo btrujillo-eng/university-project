@@ -292,8 +292,8 @@ async def assign_courier(
 ) -> OrderResponse:
     _require_role(user, UserRole.STORE_MANAGER)
     courier = await session.get(User, courier_id)
-    if courier is None or courier.user_role != UserRole.COURIER:
-        raise HTTPException(status_code=404, detail="El domiciliario no existe")
+    if courier is None or courier.user_role != UserRole.COURIER or not courier.is_active:
+        raise HTTPException(status_code=404, detail="El domiciliario no existe o está inactivo")
     order = await OrderRepository(session).get_by_id_for_update(order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="El pedido no existe")
