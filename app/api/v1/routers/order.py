@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+import hashlib
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
@@ -147,7 +148,7 @@ async def checkout(
         discount_type=DiscountStrategy.NODISCOUNT.value,
         transaction_amount=total,
         payment_method=data.payment_method,
-        idempotency_key=f"checkout-{user.user_id}-{idempotency_key}",
+        idempotency_key=f"checkout-{user.user_id}-{hashlib.sha256(idempotency_key.encode()).hexdigest()}",
     )
     try:
         payment = await payment_use_case.process(payment_data)
