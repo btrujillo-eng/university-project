@@ -37,7 +37,7 @@ class PasswordRestorationUseCase:
                 # The endpoint returns the same public response whether or not
                 # the email exists, preventing account enumeration.
                 return
-            code = generate_restore_code(4)
+            code = generate_restore_code(6)
             created = await uow.restore_code.add_restore_code(
                 RestoreCodeData(
                     user_id=user.user_id,
