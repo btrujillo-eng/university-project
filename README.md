@@ -75,7 +75,7 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 
 ## Limitaciones conocidas
 
-- Stripe y PostgreSQL no comparten una transacción distribuida. El header `Idempotency-Key` evita repetir un PaymentIntent para la misma clave, incluso si la primera solicitud falla al persistir el pedido; la aplicación aún requiere reconciliación operativa de pagos huérfanos antes de producción.
+- Stripe y PostgreSQL no comparten una transacción distribuida. El header `Idempotency-Key` evita repetir un PaymentIntent para la misma clave de usuario, incluso si la primera solicitud falla al persistir el pedido; la aplicación aún requiere reconciliación operativa de pagos huérfanos antes de producción.
 - La integración Stripe actual usa tokens de prueba; antes de producción, el frontend debe tokenizar con Stripe.js y el backend no debe recibir ni almacenar número completo de tarjeta ni CVV.
 - La CI no sustituye pruebas reales con credenciales de Stripe/Resend ni pruebas de carga en el entorno desplegado.
 
