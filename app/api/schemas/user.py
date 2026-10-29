@@ -39,8 +39,8 @@ class UserCreateRequest(BaseModel):
 
 class UserResponse(BaseModel):
     user_id: int = Field(description="User's id")
-    first_name: Name = Field(description="User's first name")
-    first_surname: Surname = Field(description="User's first surname")
+    first_name: str = Field(min_length=1, max_length=20, description="User's first name")
+    first_surname: str = Field(min_length=1, max_length=20, description="User's first surname")
     user_role: UserRole = Field(description="User's role")
     is_active: bool = Field(description="Indicates whether the user account is active in the system")
 
