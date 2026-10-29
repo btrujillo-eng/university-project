@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 import os
 import re
 from collections.abc import AsyncIterator
