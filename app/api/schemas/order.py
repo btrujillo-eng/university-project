@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.payment import PaymentMethodRequest, PaymentResponse
-from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus
+from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus
 
 
 class ShippingAddressRequest(BaseModel):
@@ -23,7 +23,6 @@ class CheckoutRequest(BaseModel):
 
     shipping: ShippingAddressRequest
     payment_method: PaymentMethodRequest
-    discount_type: DiscountStrategy = DiscountStrategy.NODISCOUNT
 
 
 class OrderItemResponse(BaseModel):
