@@ -29,7 +29,7 @@ class OrderItemResponse(BaseModel):
     product_id: int
     product_name: str
     unit_price: Decimal
-    quantity: int
+    quantity: Decimal
     image_path: str | None = None
 
 
