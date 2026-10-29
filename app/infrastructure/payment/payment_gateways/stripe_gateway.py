@@ -58,6 +58,7 @@ class StripeGateway(IPaymentGateway):
                     f"{payment_data.user_data.first_surname}"
                 ),
                 metadata={"integration": "canasta_express"},
+                **({"idempotency_key": payment_data.idempotency_key} if payment_data.idempotency_key else {}),
             )
             succeeded = intent["status"] == "succeeded"
             return PaymentResponse(
