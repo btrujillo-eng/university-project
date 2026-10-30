@@ -57,7 +57,15 @@ class OrderResponse(BaseModel):
     items: list[OrderItemResponse]
 
 
+class DeliveryStatusUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    delivery_status: DeliveryStatus
+
+
 class CashPaymentUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     payment_status: PaymentStatus
 
 
