@@ -110,7 +110,7 @@ El backend valida cada operación según el rol autenticado; ocultar botones en 
 - `packaging_manager`: consulta la cola de pedidos `pending` y confirma el empaque. También puede consultar por separado los pedidos `returned_to_warehouse` para volver a empacarlos.
 - `courier`: solo consulta pedidos asignados a su propio usuario. Puede moverlos de `packaged` a `in_transit`; desde `in_transit` puede confirmar `delivered` o `returned_to_warehouse`. No puede cancelar pedidos, marcar pedidos como empacados ni asignarse pedidos.
 
-Cuando un domiciliario devuelve un pedido a bodega, el backend elimina la asignación anterior. El encargado de empaque debe volver a empacarlo y el administrador de tienda debe asignarlo nuevamente. El pago en efectivo solo puede confirmarse por el domiciliario asignado mientras el pedido está `in_transit`; los pagos con tarjeta no pueden modificarse desde ese endpoint.
+Cuando un domiciliario devuelve un pedido a bodega, el backend elimina la asignación anterior. El encargado de empaque debe volver a empacarlo y el administrador de tienda debe asignarlo nuevamente. El pago en efectivo solo puede confirmarse por el domiciliario asignado mientras el pedido está `in_transit`; el backend exige que se confirme antes de marcar el pedido como `delivered`. Los pagos con tarjeta no pueden modificarse desde ese endpoint.
 
 Para actualizar la entrega, el cliente HTTP debe enviar JSON, por ejemplo:
 
