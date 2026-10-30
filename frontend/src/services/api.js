@@ -5,7 +5,7 @@ async function request(path, options = {}) {
     ...options,
     headers: {
       Accept: 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof URLSearchParams) ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
   })
@@ -45,6 +45,13 @@ export function loginUser(email, password) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
+  })
+}
+
+export function loginWithGoogle(idToken) {
+  return request('/users/v1/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ id_token: idToken }),
   })
 }
 
