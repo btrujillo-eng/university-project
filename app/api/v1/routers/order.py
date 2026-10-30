@@ -24,7 +24,7 @@ from app.api.schemas.user import ContactInfoRequest, UserDataRequest
 from app.api.v1.routers.user_auth import get_current_user
 from app.application import ProcessPaymentUseCase
 from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
-from app.domain.order_workflow import allowed_delivery_transitions
+from app.domain.order_workflow import allowed_delivery_transitions, can_mark_order_delivered
 from app.domain.ports.order_repository import IOrderRepository
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
@@ -404,6 +404,13 @@ async def update_delivery_status(
         raise HTTPException(status_code=403, detail="El pedido no está asignado a este domiciliario")
     if data.delivery_status not in allowed_delivery_transitions(order.delivery_status):
         raise HTTPException(status_code=409, detail="Transición de estado de entrega no permitida")
+    if data.delivery_status == DeliveryStatus.DELIVERED and not can_mark_order_delivered(
+        order.payment_method, order.payment_status
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Confirma el pago en efectivo antes de marcar el pedido como entregado",
+        )
 
     order.delivery_status = data.delivery_status
     if data.delivery_status == DeliveryStatus.RETURNED_TO_WAREHOUSE:
