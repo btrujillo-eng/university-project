@@ -5,7 +5,7 @@ Successful card payments are inserted into the PostgreSQL `outbox_events` table.
 ## Setup
 
 1. Configure `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. The sender defaults to Resend's test sender `onboarding@resend.dev`; production sending requires a verified sender/domain in Resend.
-2. Apply the database migrations with the migration role: `alembic upgrade head`.
+2. Apply the database migrations with the migration role: `alembic upgrade head`. The outbox migration is revision `20261030_06`, chained after `20261029_05_fractional_quantities`.
 3. Start the FastAPI application. Its lifespan starts the polling worker.
 4. Inspect `outbox_events`: `pending` means waiting for processing/retry, `processing` means claimed by a worker, `sent` means Resend accepted the email, and `failed` means retry attempts were exhausted.
 
