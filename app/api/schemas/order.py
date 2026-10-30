@@ -50,6 +50,7 @@ class OrderResponse(BaseModel):
     subtotal: Decimal
     shipping_cost: Decimal
     delivery_status: DeliveryStatus
+    allowed_delivery_statuses: list[DeliveryStatus] = Field(default_factory=list)
     payment_method: PaymentMethods
     payment_status: PaymentStatus
     created_at: datetime
