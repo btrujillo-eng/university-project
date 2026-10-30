@@ -23,6 +23,7 @@ from app.api.schemas.user import ContactInfoRequest, UserDataRequest
 from app.api.v1.routers.user_auth import get_current_user
 from app.application import ProcessPaymentUseCase
 from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
+from app.domain.order_workflow import allowed_delivery_transitions
 from app.domain.ports.order_repository import IOrderRepository
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
@@ -353,14 +354,7 @@ async def update_delivery_status(
         raise HTTPException(status_code=404, detail="El pedido no existe")
     if order.courier_id != user.user_id:
         raise HTTPException(status_code=403, detail="El pedido no está asignado a este domiciliario")
-    allowed_transitions = {
-        DeliveryStatus.PACKAGED: {DeliveryStatus.IN_TRANSIT},
-        DeliveryStatus.IN_TRANSIT: {
-            DeliveryStatus.DELIVERED,
-            DeliveryStatus.RETURNED_TO_WAREHOUSE,
-        },
-    }
-    if data.delivery_status not in allowed_transitions.get(order.delivery_status, set()):
+    if data.delivery_status not in allowed_delivery_transitions(order.delivery_status):
         raise HTTPException(status_code=409, detail="Transición de estado de entrega no permitida")
 
     order.delivery_status = data.delivery_status
