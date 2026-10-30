@@ -105,7 +105,7 @@ La revisión Alembic `20261029_03` permite `users.password_hash` nulo y agrega `
 El backend valida cada operación según el rol autenticado; ocultar botones en el frontend no sustituye estos controles:
 
 - `customer`: consulta su propio historial y realiza checkout/carrito. No puede consultar pedidos de otros clientes ni modificar estados.
-- `store_manager`: registra productos, actualiza precios y asigna domiciliarios a pedidos empacados.
+- `store_manager`: registra productos, actualiza precios, consulta pedidos empacados en `GET /orders/ready-for-assignment`, consulta domiciliarios activos en `GET /orders/couriers` y asigna domiciliarios a pedidos empacados.
 - `warehouse_manager`: actualiza existencias. No puede empacar ni asignar domiciliarios.
 - `packaging_manager`: consulta la cola de pedidos `pending` y confirma el empaque. También puede consultar por separado los pedidos `returned_to_warehouse` para volver a empacarlos.
 - `courier`: solo consulta pedidos asignados a su propio usuario. Puede moverlos de `packaged` a `in_transit`; desde `in_transit` puede confirmar `delivered` o `returned_to_warehouse`. No puede cancelar pedidos, marcar pedidos como empacados ni asignarse pedidos.
