@@ -1,4 +1,4 @@
-from app.domain.enums import DeliveryStatus
+from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus
 
 
 def allowed_delivery_transitions(current: DeliveryStatus) -> frozenset[DeliveryStatus]:
@@ -13,3 +13,14 @@ def allowed_delivery_transitions(current: DeliveryStatus) -> frozenset[DeliveryS
         ),
     }
     return transitions.get(current, frozenset())
+
+
+def can_mark_order_delivered(
+    payment_method: PaymentMethods,
+    payment_status: PaymentStatus,
+) -> bool:
+    """Cash orders must be confirmed as paid before delivery is completed."""
+    return (
+        payment_method != PaymentMethods.CASH
+        or payment_status == PaymentStatus.SUCCEDED
+    )
