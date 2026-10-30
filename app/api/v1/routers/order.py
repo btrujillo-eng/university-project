@@ -14,6 +14,7 @@ from app.api.schemas.order import (
     DeliveryStatusUpdateRequest,
     CheckoutRequest,
     CheckoutResponse,
+    CourierOptionResponse,
     DigitalReceiptResponse,
     OrderItemResponse,
     OrderResponse,
@@ -327,6 +328,42 @@ async def assign_courier(
     order.courier_id = courier_id
     await session.commit()
     return _to_response(order)
+
+
+@router.get("/ready-for-assignment", response_model=list[OrderResponse])
+async def get_orders_ready_for_assignment(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[OrderResponse]:
+    _require_role(user, UserRole.STORE_MANAGER)
+    orders = await OrderRepository(session).list_by_delivery_status(
+        DeliveryStatus.PACKAGED, limit, offset
+    )
+    return [_to_response(order) for order in orders]
+
+
+@router.get("/couriers", response_model=list[CourierOptionResponse])
+async def list_active_couriers(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+) -> list[CourierOptionResponse]:
+    _require_role(user, UserRole.STORE_MANAGER)
+    statement = (
+        select(User)
+        .where(User.user_role == UserRole.COURIER, User.is_active.is_(True))
+        .order_by(User.first_name, User.first_surname, User.id)
+    )
+    couriers = (await session.scalars(statement)).all()
+    return [
+        CourierOptionResponse(
+            id=courier.id,
+            first_name=courier.first_name,
+            first_surname=courier.first_surname,
+        )
+        for courier in couriers
+    ]
 
 
 @router.get("/courier/assigned", response_model=list[OrderResponse])
