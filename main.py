@@ -11,7 +11,6 @@ from app.api.v1.routers import (
     cart,
     health,
     order,
-    payment,
     product,
     restore_password,
     user_auth,
@@ -53,7 +52,6 @@ app.mount("/media", StaticFiles(directory=media_root), name="media")
 app.include_router(product.router)
 app.include_router(cart.router)
 app.include_router(order.router)
-app.include_router(payment.router)
 app.include_router(health.router)
 app.include_router(user_registration.router)
 app.include_router(user_auth.router_login)
