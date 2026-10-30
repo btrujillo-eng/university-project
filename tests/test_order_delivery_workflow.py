@@ -4,6 +4,10 @@ from pydantic import ValidationError
 from app.api.schemas.order import DeliveryStatusUpdateRequest
 from app.domain.enums import DeliveryStatus
 from app.domain.order_workflow import allowed_delivery_transitions
+from app.api.v1.routers.order import _require_role
+from app.domain.enums import UserRole
+from fastapi import HTTPException
+from types import SimpleNamespace
 
 
 @pytest.mark.parametrize(
@@ -52,3 +56,23 @@ def test_courier_request_schema_accepts_enum_values_only(invalid_status) -> None
     else:
         with pytest.raises(ValidationError):
             DeliveryStatusUpdateRequest(delivery_status=invalid_status)
+
+
+@pytest.mark.parametrize(
+    ("role", "expected_allowed"),
+    [
+        (UserRole.STORE_MANAGER, True),
+        (UserRole.WAREHOUSE_MANAGER, False),
+        (UserRole.PACKAGING_MANAGER, False),
+        (UserRole.COURIER, False),
+        (UserRole.CUSTOMER, False),
+    ],
+)
+def test_store_manager_role_is_required_for_store_manager_actions(role, expected_allowed) -> None:
+    user = SimpleNamespace(user_role=role.value)
+    if expected_allowed:
+        _require_role(user, UserRole.STORE_MANAGER)
+    else:
+        with pytest.raises(HTTPException) as error:
+            _require_role(user, UserRole.STORE_MANAGER)
+        assert error.value.status_code == 403
