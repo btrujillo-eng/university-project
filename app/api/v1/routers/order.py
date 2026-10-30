@@ -11,8 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.payment import get_process_payment
 from app.api.schemas.order import (
     CashPaymentUpdateRequest,
+    DeliveryStatusUpdateRequest,
     CheckoutRequest,
     CheckoutResponse,
+    CourierOptionResponse,
     DigitalReceiptResponse,
     OrderItemResponse,
     OrderResponse,
@@ -22,6 +24,7 @@ from app.api.schemas.user import ContactInfoRequest, UserDataRequest
 from app.api.v1.routers.user_auth import get_current_user
 from app.application import ProcessPaymentUseCase
 from app.domain.enums import DeliveryStatus, DiscountStrategy, PaymentMethods, PaymentStatus, TypeCurrency, UserRole
+from app.domain.order_workflow import allowed_delivery_transitions, can_mark_order_delivered
 from app.domain.ports.order_repository import IOrderRepository
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
@@ -46,7 +49,7 @@ def _require_role(user: AuthenticatedUser, role: UserRole) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para esta operación")
 
 
-def _to_response(order: Order) -> OrderResponse:
+def _to_response(order: Order, *, include_allowed_delivery_statuses: bool = False) -> OrderResponse:
     items = [
         OrderItemResponse(
             product_id=item.product_id,
@@ -67,6 +70,14 @@ def _to_response(order: Order) -> OrderResponse:
         subtotal=subtotal,
         shipping_cost=SHIPPING_COST,
         delivery_status=order.delivery_status,
+        allowed_delivery_statuses=(
+            sorted(
+                allowed_delivery_transitions(order.delivery_status),
+                key=lambda delivery_status: delivery_status.value,
+            )
+            if include_allowed_delivery_statuses
+            else []
+        ),
         payment_method=order.payment_method,
         payment_status=order.payment_status,
         created_at=order.created_at,
@@ -250,7 +261,7 @@ async def get_orders_for_packaging(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.PACKAGING_MANAGER)
-    orders = await OrderRepository(session).list_all(limit, offset)
+    orders = await OrderRepository(session).list_by_delivery_status(DeliveryStatus.PENDING, limit, offset)
     return [_to_response(order) for order in orders]
 
 
@@ -266,6 +277,20 @@ async def get_orders_pending_packaging(
     return [_to_response(order) for order in orders]
 
 
+@router.get("/packaging/returned", response_model=list[OrderResponse])
+async def get_orders_returned_to_warehouse(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[OrderResponse]:
+    _require_role(user, UserRole.PACKAGING_MANAGER)
+    orders = await OrderRepository(session).list_by_delivery_status(
+        DeliveryStatus.RETURNED_TO_WAREHOUSE, limit, offset
+    )
+    return [_to_response(order) for order in orders]
+
+
 @router.post("/{order_id}/packaged", response_model=OrderResponse)
 async def mark_order_packaged(
     order_id: int,
@@ -277,8 +302,16 @@ async def mark_order_packaged(
     order = await repository.get_by_id_for_update(order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="El pedido no existe")
-    if order.delivery_status != DeliveryStatus.PENDING:
-        raise HTTPException(status_code=409, detail="El pedido no está pendiente de empaque")
+    if order.delivery_status not in {
+        DeliveryStatus.PENDING,
+        DeliveryStatus.RETURNED_TO_WAREHOUSE,
+    }:
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se pueden empacar pedidos pendientes o devueltos a bodega",
+        )
+    # A returned order must be packed again and assigned to a courier again.
+    order.courier_id = None
     order.delivery_status = DeliveryStatus.PACKAGED
     await session.commit()
     return _to_response(order)
@@ -305,6 +338,42 @@ async def assign_courier(
     return _to_response(order)
 
 
+@router.get("/ready-for-assignment", response_model=list[OrderResponse])
+async def get_orders_ready_for_assignment(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[OrderResponse]:
+    _require_role(user, UserRole.STORE_MANAGER)
+    orders = await OrderRepository(session).list_by_delivery_status(
+        DeliveryStatus.PACKAGED, limit, offset
+    )
+    return [_to_response(order) for order in orders]
+
+
+@router.get("/couriers", response_model=list[CourierOptionResponse])
+async def list_active_couriers(
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_order_session)],
+) -> list[CourierOptionResponse]:
+    _require_role(user, UserRole.STORE_MANAGER)
+    statement = (
+        select(User)
+        .where(User.user_role == UserRole.COURIER, User.is_active.is_(True))
+        .order_by(User.first_name, User.first_surname, User.id)
+    )
+    couriers = (await session.scalars(statement)).all()
+    return [
+        CourierOptionResponse(
+            id=courier.id,
+            first_name=courier.first_name,
+            first_surname=courier.first_surname,
+        )
+        for courier in couriers
+    ]
+
+
 @router.get("/courier/assigned", response_model=list[OrderResponse])
 async def get_assigned_orders(
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
@@ -314,13 +383,16 @@ async def get_assigned_orders(
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.COURIER)
     orders = await OrderRepository(session).list_for_courier(user.user_id, limit, offset)
-    return [_to_response(order) for order in orders]
+    return [
+        _to_response(order, include_allowed_delivery_statuses=True)
+        for order in orders
+    ]
 
 
 @router.patch("/{order_id}/delivery-status", response_model=OrderResponse)
 async def update_delivery_status(
     order_id: int,
-    new_status: DeliveryStatus,
+    data: DeliveryStatusUpdateRequest,
     user: Annotated[AuthenticatedUser, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_order_session)],
 ) -> OrderResponse:
@@ -330,13 +402,20 @@ async def update_delivery_status(
         raise HTTPException(status_code=404, detail="El pedido no existe")
     if order.courier_id != user.user_id:
         raise HTTPException(status_code=403, detail="El pedido no está asignado a este domiciliario")
-    allowed_transitions = {
-        DeliveryStatus.PACKAGED: DeliveryStatus.IN_TRANSIT,
-        DeliveryStatus.IN_TRANSIT: DeliveryStatus.DELIVERED,
-    }
-    if allowed_transitions.get(order.delivery_status) != new_status:
+    if data.delivery_status not in allowed_delivery_transitions(order.delivery_status):
         raise HTTPException(status_code=409, detail="Transición de estado de entrega no permitida")
-    order.delivery_status = new_status
+    if data.delivery_status == DeliveryStatus.DELIVERED and not can_mark_order_delivered(
+        order.payment_method, order.payment_status
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Confirma el pago en efectivo antes de marcar el pedido como entregado",
+        )
+
+    order.delivery_status = data.delivery_status
+    if data.delivery_status == DeliveryStatus.RETURNED_TO_WAREHOUSE:
+        # The returned order leaves this courier's responsibility.
+        order.courier_id = None
     await session.commit()
     return _to_response(order)
 
@@ -358,6 +437,15 @@ async def update_cash_payment_status(
         raise HTTPException(status_code=409, detail="Solo se puede actualizar el pago de pedidos en efectivo")
     if data.payment_status != PaymentStatus.SUCCEDED:
         raise HTTPException(status_code=422, detail="El domiciliario solo puede confirmar un pago recibido")
+    if order.payment_status == PaymentStatus.SUCCEDED:
+        return _to_response(order)
+    if order.payment_status != PaymentStatus.PENDING:
+        raise HTTPException(status_code=409, detail="El pago no está pendiente")
+    if order.delivery_status != DeliveryStatus.IN_TRANSIT:
+        raise HTTPException(
+            status_code=409,
+            detail="El pago en efectivo solo puede confirmarse durante la entrega",
+        )
     order.payment_status = PaymentStatus.SUCCEDED
     await session.commit()
     return _to_response(order)
