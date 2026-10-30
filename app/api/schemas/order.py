@@ -25,6 +25,12 @@ class CheckoutRequest(BaseModel):
     payment_method: PaymentMethodRequest
 
 
+class CourierOptionResponse(BaseModel):
+    id: int
+    first_name: str
+    first_surname: str
+
+
 class OrderItemResponse(BaseModel):
     product_id: int
     product_name: str
