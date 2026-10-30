@@ -118,4 +118,4 @@ Para actualizar la entrega, el cliente HTTP debe enviar JSON, por ejemplo:
 { "delivery_status": "returned_to_warehouse" }
 ```
 
-a `PATCH /orders/{order_id}/delivery-status`. El backend rechaza cualquier transición que no esté permitida, aunque el valor exista en el enum de PostgreSQL. La cola de empaque pendiente se obtiene en `GET /orders/packaging/pending`; las devoluciones se consultan en `GET /orders/packaging/returned`.
+a `PATCH /orders/{order_id}/delivery-status`. El backend rechaza cualquier transición que no esté permitida, aunque el valor exista en el enum de PostgreSQL. La cola de empaque pendiente se obtiene en `GET /orders/packaging/pending`; las devoluciones se consultan en `GET /orders/packaging/returned`. El endpoint `GET /orders/courier/assigned` incluye `allowed_delivery_statuses` por pedido para que la interfaz muestre únicamente las acciones disponibles, sin reemplazar la validación del servidor.
