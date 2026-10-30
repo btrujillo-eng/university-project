@@ -49,7 +49,7 @@ def _require_role(user: AuthenticatedUser, role: UserRole) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permisos para esta operación")
 
 
-def _to_response(order: Order) -> OrderResponse:
+def _to_response(order: Order, *, include_allowed_delivery_statuses: bool = False) -> OrderResponse:
     items = [
         OrderItemResponse(
             product_id=item.product_id,
@@ -70,6 +70,14 @@ def _to_response(order: Order) -> OrderResponse:
         subtotal=subtotal,
         shipping_cost=SHIPPING_COST,
         delivery_status=order.delivery_status,
+        allowed_delivery_statuses=(
+            sorted(
+                allowed_delivery_transitions(order.delivery_status),
+                key=lambda delivery_status: delivery_status.value,
+            )
+            if include_allowed_delivery_statuses
+            else []
+        ),
         payment_method=order.payment_method,
         payment_status=order.payment_status,
         created_at=order.created_at,
@@ -375,7 +383,10 @@ async def get_assigned_orders(
 ) -> list[OrderResponse]:
     _require_role(user, UserRole.COURIER)
     orders = await OrderRepository(session).list_for_courier(user.user_id, limit, offset)
-    return [_to_response(order) for order in orders]
+    return [
+        _to_response(order, include_allowed_delivery_statuses=True)
+        for order in orders
+    ]
 
 
 @router.patch("/{order_id}/delivery-status", response_model=OrderResponse)
