@@ -1,6 +1,6 @@
 """Create durable outbox for payment confirmation emails.
 
-Revision ID: 20261028_01
+Revision ID: 20261030_06
 Revises: 20261029_05
 Create Date: 2026-10-30
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = "20261028_01"
+revision = "20261030_06"
 down_revision = "20261029_05"
 branch_labels = None
 depends_on = None
