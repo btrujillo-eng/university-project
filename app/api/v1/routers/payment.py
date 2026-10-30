@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.dependencies.payment import get_process_payment
 from app.api.schemas import PaymentDataRequest, PaymentResponse
 from app.application import ProcessPaymentUseCase
-from app.exceptions.errors import NotificationServiceError, StripePaymentMethodError
+from app.exceptions.errors import StripePaymentMethodError
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -15,13 +15,8 @@ async def process_payment(
 ) -> PaymentResponse:
     try:
         return await process_payment.process(payment_data)
-    except StripePaymentMethodError as e:
+    except StripePaymentMethodError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
-        ) from e
-    except NotificationServiceError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
-        ) from e
+            detail=str(exc),
+        ) from exc
