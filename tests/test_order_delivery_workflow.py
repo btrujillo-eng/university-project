@@ -5,7 +5,8 @@ from app.api.schemas.order import DeliveryStatusUpdateRequest
 from app.domain.enums import DeliveryStatus
 from app.domain.order_workflow import allowed_delivery_transitions
 from app.api.v1.routers.order import _require_role
-from app.domain.enums import UserRole
+from app.domain.enums import UserRole, PaymentMethods, PaymentStatus
+from app.domain.order_workflow import can_mark_order_delivered
 from fastapi import HTTPException
 from types import SimpleNamespace
 
@@ -76,3 +77,17 @@ def test_store_manager_role_is_required_for_store_manager_actions(role, expected
         with pytest.raises(HTTPException) as error:
             _require_role(user, UserRole.STORE_MANAGER)
         assert error.value.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("method", "payment_status", "expected"),
+    [
+        (PaymentMethods.CARD, PaymentStatus.SUCCEDED, True),
+        (PaymentMethods.CARD, PaymentStatus.PENDING, True),
+        (PaymentMethods.CASH, PaymentStatus.SUCCEDED, True),
+        (PaymentMethods.CASH, PaymentStatus.PENDING, False),
+        (PaymentMethods.CASH, PaymentStatus.FAILED, False),
+    ],
+)
+def test_cash_order_must_be_paid_before_delivery(method, payment_status, expected) -> None:
+    assert can_mark_order_delivered(method, payment_status) is expected
