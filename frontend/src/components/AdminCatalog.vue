@@ -10,6 +10,7 @@ import {
 
 const props = defineProps({
   user: { type: Object, required: true },
+  token: { type: String, required: true },
 })
 const emit = defineEmits(['logout'])
 
@@ -141,7 +142,7 @@ async function submitProduct() {
 
   busy.value = true
   try {
-    await createProduct(payload)
+    await createProduct(payload, props.token)
     successMessage.value = 'El producto se agregó correctamente al catálogo.'
     await loadProducts()
     resetForm()
@@ -168,7 +169,7 @@ async function savePrice(product) {
   clearMessages()
   busy.value = true
   try {
-    const updated = await updateProductPrice(product.id, priceDraft.value)
+    const updated = await updateProductPrice(product.id, priceDraft.value, props.token)
     const index = products.value.findIndex((item) => item.id === product.id)
     if (index !== -1) products.value[index] = updated
     cancelPriceEdit()
