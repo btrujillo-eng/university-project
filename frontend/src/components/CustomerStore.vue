@@ -227,7 +227,12 @@ async function mountStripeCard() {
   }
 }
 watch(paymentMethod, async (value) => {
-  if (value === 'card' && screen.value === 'payment') await mountStripeCard()
+  if (value === 'card' && screen.value === 'payment') {
+    await mountStripeCard()
+  } else if (value !== 'card' && stripeCardElement.value && stripeReady.value) {
+    stripeCardElement.value.unmount()
+    stripeReady.value = false
+  }
 })
 async function submitCheckout() {
   clearMessages()
@@ -261,10 +266,12 @@ async function submitCheckout() {
     checkoutResult.value = result
     receipt.value = result.receipt
     cart.value = { cart_id: null, items: [], total: 0 }
-    screen.value = 'confirmation'
-    if (paymentMethod.value === 'card' && stripeCardElement.value) {
+    if (paymentMethod.value === 'card' && stripeCardElement.value && stripeReady.value) {
       stripeCardElement.value.clear()
+      stripeCardElement.value.unmount()
+      stripeReady.value = false
     }
+    screen.value = 'confirmation'
   } catch (error) {
     showError(error)
     if (error?.message?.includes('mínimo')) screen.value = 'cart'
