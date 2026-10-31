@@ -1,0 +1,29 @@
+<script setup>
+import { onMounted, ref } from 'vue'
+import { confirmCashPayment, getAssignedOrders, updateDeliveryStatus } from '../services/api'
+const props=defineProps({user:{type:Object,required:true},token:{type:String,required:true}})
+const emit=defineEmits(['logout'])
+const orders=ref([]), selected=ref(null), loading=ref(false), busy=ref(false), error=ref(''), success=ref('')
+const displayName=[props.user.first_name,props.user.first_surname].filter(Boolean).join(' ')||'Domiciliario'
+const money=v=>new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(v||0))
+const dateLabel=v=>new Intl.DateTimeFormat('es-CO',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v))
+const statusLabel=v=>({packaged:'Empacado',in_transit:'En camino',delivered:'Entregado',returned_to_warehouse:'Devuelto a bodega',pending:'Pendiente'})[v]||v
+async function loadOrders(){loading.value=true;error.value='';selected.value=null;try{orders.value=await getAssignedOrders(props.token)}catch(e){error.value=e.message||'No fue posible cargar tus entregas.'}finally{loading.value=false}}
+async function updateStatus(status){if(!selected.value)return;busy.value=true;error.value='';success.value='';try{selected.value=await updateDeliveryStatus(selected.value.id,status,props.token);success.value='Estado de entrega actualizado.';await loadOrders()}catch(e){error.value=e.message||'No fue posible actualizar el estado.'}finally{busy.value=false}}
+async function confirmPayment(){if(!selected.value)return;busy.value=true;error.value='';try{selected.value=await confirmCashPayment(selected.value.id,props.token);success.value='Pago en efectivo confirmado.';await loadOrders()}catch(e){error.value=e.message||'No fue posible confirmar el pago.'}finally{busy.value=false}}
+function allowed(status){return selected.value?.allowed_delivery_statuses?.includes(status)}
+onMounted(loadOrders)
+</script>
+<template>
+<main class="operations-shell">
+<header class="operations-header"><a class="customer-brand" href="#" @click.prevent="loadOrders"><span class="customer-brand-mark">♧</span><span><strong>Canasta Express</strong><small>Legumbrería &amp; Verdulería Online</small></span></a><div class="operations-user"><span>Hola, {{displayName}}</span><button @click="emit('logout')">Salir</button></div></header>
+<section class="operations-page">
+<div class="operations-title-row"><div><p class="operations-kicker">OPERACIONES · DOMICILIOS</p><h1>Mis entregas asignadas</h1><p>Consulta los pedidos asignados y actualiza su estado durante la entrega.</p></div><button class="operations-refresh" @click="loadOrders">↻ Actualizar</button></div>
+<p v-if="error" class="operations-alert error">{{error}}</p><p v-if="success" class="operations-alert success">{{success}}</p>
+<div v-if="loading" class="operations-empty">Cargando entregas…</div>
+<div v-else-if="orders.length" class="operations-order-layout">
+<div class="operations-list"><button v-for="order in orders" :key="order.id" class="operations-order-row" :class="{selected:selected?.id===order.id}" @click="selected=order"><span class="operations-order-icon">⌖</span><span class="operations-order-main"><strong>Pedido #{{order.id}}</strong><small>{{order.customer_name}} · {{dateLabel(order.created_at)}}</small><small>{{order.shipping_neighborhood}}, {{order.shipping_city}}</small></span><span class="operations-status">{{statusLabel(order.delivery_status)}}</span></button></div>
+<aside v-if="selected" class="operations-detail"><div class="operations-detail-heading"><h2>Pedido #{{selected.id}}</h2><span class="operations-status">{{statusLabel(selected.delivery_status)}}</span></div><p><strong>Cliente:</strong> {{selected.customer_name}}</p><p><strong>Teléfono:</strong> <a :href="'tel:'+selected.phone_number">{{selected.phone_number}}</a></p><p><strong>Dirección:</strong> {{selected.shipping_street}}, {{selected.shipping_neighborhood}}, {{selected.shipping_city}}, {{selected.shipping_department}}</p><p><strong>Referencia:</strong> {{selected.shipping_details}}</p><p><strong>Instrucciones:</strong> {{selected.shipping_instructions||'Sin instrucciones adicionales'}}</p><h3>Resumen del pedido</h3><div v-for="item in selected.items" :key="item.product_id" class="operations-item"><img v-if="item.image_path" :src="'/backend'+item.image_path" :alt="item.product_name"><span v-else>♧</span><div><strong>{{item.product_name}}</strong><small>{{item.quantity}} · {{money(item.unit_price)}} c/u</small></div></div><div class="operations-total"><span>Total a cobrar</span><strong>{{money(selected.total_price)}}</strong></div><p v-if="selected.payment_method==='cash'" class="operations-payment-note">Pago contraentrega · {{selected.payment_status==='succeeded'?'Pago confirmado':'Pago pendiente'}}</p><button v-if="selected.payment_method==='cash' && selected.payment_status==='pending' && selected.delivery_status==='in_transit'" class="operations-primary" :disabled="busy" @click="confirmPayment">{{busy?'Guardando…':'Confirmar efectivo recibido'}}</button><button v-if="allowed('in_transit')" class="operations-primary" :disabled="busy" @click="updateStatus('in_transit')">Iniciar entrega</button><button v-if="allowed('delivered') && (selected.payment_method!=='cash'||selected.payment_status==='succeeded')" class="operations-primary" :disabled="busy" @click="updateStatus('delivered')">Marcar como entregado</button><button v-if="allowed('returned_to_warehouse')" class="operations-secondary" :disabled="busy" @click="updateStatus('returned_to_warehouse')">Reportar devolución a bodega</button></aside>
+</div><div v-else class="operations-empty">No tienes pedidos asignados en este momento.</div>
+</section></main>
+</template>
