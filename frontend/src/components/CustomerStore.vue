@@ -22,6 +22,8 @@ const cart = ref({ cart_id: null, items: [], total: 0 })
 const orders = ref([])
 const selectedProduct = ref(null)
 const selectedOrder = ref(null)
+const buyNowAfterAdd = ref(false)
+const checkoutIdempotencyKey = ref('')
 const searchTerm = ref('')
 const quantityDraft = ref('1')
 const busy = ref(false)
@@ -134,8 +136,9 @@ async function openCart() {
   await loadCart()
   screen.value = 'cart'
 }
-function openQuantityDialog(product) {
+function openQuantityDialog(product, buyNow = false) {
   clearMessages()
+  buyNowAfterAdd.value = buyNow
   selectedProduct.value = product
   quantityDraft.value = '1'
 }
@@ -155,6 +158,10 @@ async function addSelectedProduct() {
     cart.value = await addCartItem(selectedProduct.value.id, amount, props.token)
     selectedProduct.value = null
     successMessage.value = 'Producto agregado al carrito.'
+    if (buyNowAfterAdd.value) {
+      buyNowAfterAdd.value = false
+      await openCart()
+    }
   } catch (error) {
     showError(error)
   } finally {
@@ -245,11 +252,12 @@ async function submitCheckout() {
     } else {
       payment = { method: 'cash' }
     }
-    const idempotencyKey = crypto.randomUUID()
+    if (!checkoutIdempotencyKey.value) checkoutIdempotencyKey.value = crypto.randomUUID()
     const result = await checkoutOrder({
       shipping: { ...shipping },
       payment_method: payment,
-    }, idempotencyKey, props.token)
+    }, checkoutIdempotencyKey.value, props.token)
+    checkoutIdempotencyKey.value = ''
     checkoutResult.value = result
     receipt.value = result.receipt
     cart.value = { cart_id: null, items: [], total: 0 }
@@ -338,7 +346,7 @@ onBeforeUnmount(() => {
             <h2>{{ product.name }}</h2>
             <p class="customer-product-price">{{ money(product.price) }} / {{ unitLabel(product.unit_of_measure) }}</p>
             <p class="customer-stock">Disponible: {{ quantity(product.stock) }} {{ unitLabel(product.unit_of_measure) }}</p>
-            <button type="button" class="customer-add-button" :disabled="Number(product.stock) <= 0" @click="openQuantityDialog(product)">Agregar al carrito</button>
+            <div class="customer-product-actions"><button type="button" class="customer-add-button" :disabled="Number(product.stock) <= 0" @click="openQuantityDialog(product)">Agregar al carrito</button><button type="button" class="customer-buy-button" :disabled="Number(product.stock) <= 0" @click="openQuantityDialog(product, true)">Comprar ahora</button></div>
           </div>
         </article>
       </div>
