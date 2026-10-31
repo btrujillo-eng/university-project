@@ -273,8 +273,14 @@ async function submitCheckout() {
     }
     screen.value = 'confirmation'
   } catch (error) {
-    showError(error)
-    if (error?.message?.includes('mínimo')) screen.value = 'cart'
+    if (error?.status === 409 && error?.detail && typeof error.detail === 'object' && error.detail.order_id) {
+      screen.value = 'history'
+      await loadOrders()
+      successMessage.value = `El pedido #${error.detail.order_id} ya había sido registrado. Puedes consultar su estado en tu historial.`
+    } else {
+      showError(error)
+      if (error?.message?.includes('mínimo')) screen.value = 'cart'
+    }
   } finally {
     busy.value = false
   }
