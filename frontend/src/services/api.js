@@ -27,7 +27,11 @@ async function request(path, options = {}, token = null) {
         : detail
           ? JSON.stringify(detail)
           : `Error HTTP ${response.status}`
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    error.detail = detail
+    error.payload = payload
+    throw error
   }
 
   return payload
