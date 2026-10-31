@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import AdminCatalog from './components/AdminCatalog.vue'
 import {
+  getCurrentUser,
   loginUser,
   loginWithGoogle,
   registerUser,
@@ -15,6 +17,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const accessToken = ref(localStorage.getItem('canasta_access_token') || '')
 const currentUserEmail = ref('')
+const currentUser = ref(null)
 const rememberSession = ref(localStorage.getItem('canasta_remember_session') === 'true')
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -82,13 +85,24 @@ function saveToken(token) {
   }
 }
 
+async function establishSession(token, emailLabel) {
+  saveToken(token)
+  try {
+    currentUser.value = await getCurrentUser(token)
+    currentUserEmail.value = emailLabel
+  } catch (error) {
+    saveToken('')
+    currentUser.value = null
+    throw error
+  }
+}
+
 async function submitLogin() {
   clearMessages()
   busy.value = true
   try {
     const result = await loginUser(login.email, login.password)
-    saveToken(result.access_token)
-    currentUserEmail.value = login.email
+    await establishSession(result.access_token, login.email)
   } catch (error) {
     errorMessage.value = getError(error)
   } finally {
@@ -190,8 +204,7 @@ function handleGoogleCredential(response) {
   clearMessages()
   loginWithGoogle(response.credential)
     .then((result) => {
-      saveToken(result.access_token)
-      currentUserEmail.value = 'tu cuenta de Google'
+      establishSession(result.access_token, 'tu cuenta de Google')
     })
     .catch((error) => { errorMessage.value = getError(error) })
     .finally(() => { busy.value = false })
@@ -217,6 +230,7 @@ function startGoogleLogin() {
 function signOut() {
   accessToken.value = ''
   currentUserEmail.value = ''
+  currentUser.value = null
   login.password = ''
   localStorage.removeItem('canasta_access_token')
   localStorage.removeItem('canasta_remember_session')
@@ -224,8 +238,14 @@ function signOut() {
   successMessage.value = 'Has cerrado sesión.'
 }
 
-onMounted(() => {
-  if (accessToken.value) currentUserEmail.value = 'tu cuenta'
+onMounted(async () => {
+  if (!accessToken.value) return
+  try {
+    currentUser.value = await getCurrentUser(accessToken.value)
+    currentUserEmail.value = 'tu cuenta'
+  } catch {
+    signOut()
+  }
 })
 </script>
 
@@ -311,12 +331,21 @@ onMounted(() => {
           <p v-else class="switch-copy"><button type="button" class="inline-link" @click="navigate('login')">Volver a Iniciar sesión</button></p>
         </template>
 
-        <section v-else class="signed-in">
+        <AdminCatalog
+          v-if="currentUser?.user_role === 'store_manager'"
+          :user="currentUser"
+          :token="accessToken"
+          @logout="signOut"
+        />
+        <section v-else-if="currentUser" class="signed-in">
           <div class="success-icon">✓</div>
           <h1>¡Bienvenido!</h1>
           <p class="subtitle">Has iniciado sesión como <strong>{{ currentUserEmail }}</strong>.</p>
-          <p class="signed-in-copy">Tu sesión se inició correctamente. Ya puedes continuar con Canasta Express.</p>
+          <p class="signed-in-copy">Tu cuenta tiene el rol {{ currentUser.user_role }}. La interfaz correspondiente a este rol se implementará en la siguiente etapa.</p>
           <button class="primary-button" type="button" @click="signOut">Cerrar sesión</button>
+        </section>
+        <section v-else class="signed-in">
+          <p class="subtitle">Validando tu sesión…</p>
         </section>
       </div>
     </section>
