@@ -135,3 +135,36 @@ export function checkoutOrder(data, idempotencyKey, token) {
 export function getMyOrders(token) {
   return request('/orders/me', {}, token)
 }
+
+export function updateProductStock(productId, stock, token) {
+  return request(`/products/${productId}/stock`, {
+    method: 'PATCH',
+    body: JSON.stringify({ stock }),
+  }, token)
+}
+
+export function getPackagingOrders(token, returned = false) {
+  return request(returned ? '/orders/packaging/returned' : '/orders/packaging/pending', {}, token)
+}
+
+export function markOrderPackaged(orderId, token) {
+  return request(`/orders/${orderId}/packaged`, { method: 'POST' }, token)
+}
+
+export function getAssignedOrders(token) {
+  return request('/orders/courier/assigned', {}, token)
+}
+
+export function updateDeliveryStatus(orderId, deliveryStatus, token) {
+  return request(`/orders/${orderId}/delivery-status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ delivery_status: deliveryStatus }),
+  }, token)
+}
+
+export function confirmCashPayment(orderId, token) {
+  return request(`/orders/${orderId}/cash-payment`, {
+    method: 'PATCH',
+    body: JSON.stringify({ payment_status: 'succeeded' }),
+  }, token)
+}
