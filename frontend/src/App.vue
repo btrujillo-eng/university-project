@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import StoreManagerDashboard from './components/StoreManagerDashboard.vue'
 import CustomerStore from './components/CustomerStore.vue'
 import PackagingManager from './components/PackagingManager.vue'
@@ -46,6 +46,8 @@ const codeSent = ref(false)
 const showPassword = ref(false)
 const showRegisterPassword = ref(false)
 const showNewPassword = ref(false)
+const googleButtonContainer = ref(null)
+let googleInitialized = false
 
 const screenTitle = computed(() => ({
   login: 'Bienvenido de vuelta',
@@ -215,21 +217,37 @@ function handleGoogleCredential(response) {
     .finally(() => { busy.value = false })
 }
 
-function startGoogleLogin() {
-  clearMessages()
-  if (!googleClientId) {
-    errorMessage.value = 'El inicio de sesión con Google requiere configurar VITE_GOOGLE_CLIENT_ID.'
-    return
+function initializeGoogleButton() {
+  if (!googleClientId || !window.google?.accounts?.id || !googleButtonContainer.value) return
+  if (!googleInitialized) {
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+    })
+    googleInitialized = true
   }
-  if (!window.google?.accounts?.id) {
-    errorMessage.value = 'No se pudo cargar el servicio de inicio de sesión de Google.'
-    return
-  }
-  window.google.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: handleGoogleCredential,
+  googleButtonContainer.value.replaceChildren()
+  window.google.accounts.id.renderButton(googleButtonContainer.value, {
+    type: 'standard',
+    theme: 'outline',
+    size: 'large',
+    text: screen.value === 'register' ? 'signup_with' : 'signin_with',
+    shape: 'rectangular',
+    width: Math.min(400, googleButtonContainer.value.clientWidth || 400),
+    locale: 'es',
   })
-  window.google.accounts.id.prompt()
+}
+
+function prepareGoogleButton() {
+  if (!['login', 'register'].includes(screen.value)) return
+  nextTick(() => {
+    if (window.google?.accounts?.id) {
+      initializeGoogleButton()
+      return
+    }
+    const script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+    if (script) script.addEventListener('load', initializeGoogleButton, { once: true })
+  })
 }
 
 function signOut() {
@@ -243,7 +261,10 @@ function signOut() {
   successMessage.value = 'Has cerrado sesión.'
 }
 
+watch(screen, prepareGoogleButton)
+
 onMounted(async () => {
+  prepareGoogleButton()
   if (!accessToken.value) return
   try {
     currentUser.value = await getCurrentUser(accessToken.value)
@@ -328,7 +349,7 @@ onMounted(async () => {
           </form>
 
           <div v-if="screen !== 'newPassword'" class="social-divider"><span></span><p>o continuar con</p><span></span></div>
-          <button v-if="screen !== 'newPassword'" class="google-button" type="button" :disabled="busy" @click="startGoogleLogin"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.24 5.48-4.7 7.18l7.2 5.59c4.2-3.88 7.54-9.6 7.54-17.24Z"/><path fill="#FBBC05" d="M10.54 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.75-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.88.93 7.55 2.56 10.78l7.98-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.79l-7.2-5.59c-2 1.35-4.55 2.15-8.7 2.15-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 43.62 14.62 48 24 48Z"/></svg>Iniciar con Google</button>
+          <div v-if="screen === 'login' || screen === 'register'" ref="googleButtonContainer" class="google-button-container" aria-label="Continuar con Google"></div>
 
           <p v-if="screen === 'login'" class="switch-copy">¿No tienes cuenta? <button type="button" class="inline-link" @click="navigate('register')">Registrate gratis</button></p>
           <p v-else-if="screen === 'register'" class="switch-copy">¿Ya tienes cuenta? <button type="button" class="inline-link" @click="navigate('login')">Inicia sesión</button></p>
