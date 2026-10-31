@@ -1,10 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/backend'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/backend'
 
-async function request(path, options = {}) {
+async function request(path, options = {}, token = null) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.body && !(options.body instanceof URLSearchParams) ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
     },
@@ -74,4 +75,29 @@ export function resetPassword(email, restore_code, new_password) {
     method: 'POST',
     body: JSON.stringify({ email: email.trim(), restore_code, new_password }),
   })
+}
+
+export function getCurrentUser(token) {
+  return request('/me/', {}, token)
+}
+
+export function listProducts(search = '') {
+  const query = new URLSearchParams({ limit: '100' })
+  if (search) query.set('search', search)
+  return request(`/products/?${query.toString()}`)
+}
+
+export function listProductSections() {
+  return request('/products/sections')
+}
+
+export function createProduct(formData, token) {
+  return request('/products/', { method: 'POST', body: formData }, token)
+}
+
+export function updateProductPrice(productId, price, token) {
+  return request(`/products/${productId}/price`, {
+    method: 'PATCH',
+    body: JSON.stringify({ price }),
+  }, token)
 }
