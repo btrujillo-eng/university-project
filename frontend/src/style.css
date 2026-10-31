@@ -379,3 +379,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,107,67,.
   .order-card-heading { align-items: flex-start; flex-direction: column; }
   .cost-detail-panel { grid-column: auto; }
 }
+
+
+.customer-product-actions { display: flex; flex-direction: column; gap: 7px; margin-top: auto; }
+.customer-product-actions .customer-add-button { margin-top: 0; }
+.customer-buy-button { min-height: 43px; padding: 6px 10px; border: 0; border-radius: 10px; color: #fffdf0; background: #626346; cursor: pointer; font: 15px var(--display); }
+.customer-buy-button:hover { background: #4d5035; }
+.customer-buy-button:disabled { opacity: .5; cursor: not-allowed; }
