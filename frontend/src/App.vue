@@ -2,6 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import AdminCatalog from './components/AdminCatalog.vue'
 import CustomerStore from './components/CustomerStore.vue'
+import PackagingManager from './components/PackagingManager.vue'
+import CourierDashboard from './components/CourierDashboard.vue'
+import StockManager from './components/StockManager.vue'
+import StoreOperations from './components/StoreOperations.vue'
 import {
   getCurrentUser,
   loginUser,
@@ -337,6 +341,30 @@ onMounted(async () => {
   </main>
   <AdminCatalog
     v-if="accessToken && currentUser?.user_role === 'store_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <StoreOperations
+    v-if="accessToken && currentUser?.user_role === 'store_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <PackagingManager
+    v-else-if="accessToken && currentUser?.user_role === 'packaging_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <StockManager
+    v-else-if="accessToken && currentUser?.user_role === 'warehouse_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <CourierDashboard
+    v-else-if="accessToken && currentUser?.user_role === 'courier'"
     :user="currentUser"
     :token="accessToken"
     @logout="signOut"
