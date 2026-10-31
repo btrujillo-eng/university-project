@@ -168,3 +168,15 @@ export function confirmCashPayment(orderId, token) {
     body: JSON.stringify({ payment_status: 'succeeded' }),
   }, token)
 }
+
+export function getReadyForAssignment(token) {
+  return request('/orders/ready-for-assignment', {}, token)
+}
+
+export function getActiveCouriers(token) {
+  return request('/orders/couriers', {}, token)
+}
+
+export function assignCourier(orderId, courierId, token) {
+  return request(`/orders/${orderId}/assign-courier/${courierId}`, { method: 'POST' }, token)
+}
