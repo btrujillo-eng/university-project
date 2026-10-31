@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { API_BASE_URL } from '../services/api'
 import { getPackagingOrders, markOrderPackaged } from '../services/api'
 
 const props = defineProps({ user: { type: Object, required: true }, token: { type: String, required: true } })
@@ -51,7 +52,7 @@ onMounted(loadOrders)
           <div class="operations-detail-heading"><h2>Pedido #{{ selected.id }}</h2><span class="operations-status">{{ returned ? 'Devuelto' : 'Pendiente' }}</span></div>
           <p><strong>Cliente:</strong> {{ selected.customer_name }}</p><p><strong>Dirección:</strong> {{ selected.shipping_street }}, {{ selected.shipping_neighborhood }}, {{ selected.shipping_city }}</p><p><strong>Teléfono:</strong> {{ selected.phone_number }}</p><p><strong>Pago:</strong> {{ selected.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta' }} · {{ selected.payment_status }}</p>
           <h3>Productos que debes preparar</h3>
-          <div v-for="item in selected.items" :key="item.product_id" class="operations-item"><img v-if="item.image_path" :src="'/backend'+item.image_path" :alt="item.product_name"><span v-else>♧</span><div><strong>{{ item.product_name }}</strong><small>{{ item.quantity }} unidades</small></div></div>
+          <div v-for="item in selected.items" :key="item.product_id" class="operations-item"><img v-if="item.image_path" :src="API_BASE_URL+item.image_path" :alt="item.product_name"><span v-else>♧</span><div><strong>{{ item.product_name }}</strong><small>{{ item.quantity }} unidades</small></div></div>
           <div class="operations-total"><span>Total del pedido</span><strong>{{ money(selected.total_price) }}</strong></div>
           <button class="operations-primary" :disabled="busy" @click="packageOrder(selected)">{{ busy ? 'Actualizando…' : 'Marcar pedido como empacado' }}</button>
         </aside>
