@@ -204,7 +204,7 @@ function handleGoogleCredential(response) {
   clearMessages()
   loginWithGoogle(response.credential)
     .then((result) => {
-      establishSession(result.access_token, 'tu cuenta de Google')
+      return establishSession(result.access_token, 'tu cuenta de Google')
     })
     .catch((error) => { errorMessage.value = getError(error) })
     .finally(() => { busy.value = false })
@@ -250,7 +250,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="auth-layout">
+  <main v-if="!accessToken" class="auth-layout">
     <section class="story-panel" aria-label="Canasta Express">
       <div class="story-overlay"></div>
       <div class="story-copy">
@@ -331,23 +331,23 @@ onMounted(async () => {
           <p v-else class="switch-copy"><button type="button" class="inline-link" @click="navigate('login')">Volver a Iniciar sesión</button></p>
         </template>
 
-        <AdminCatalog
-          v-if="currentUser?.user_role === 'store_manager'"
-          :user="currentUser"
-          :token="accessToken"
-          @logout="signOut"
-        />
-        <section v-else-if="currentUser" class="signed-in">
-          <div class="success-icon">✓</div>
-          <h1>¡Bienvenido!</h1>
-          <p class="subtitle">Has iniciado sesión como <strong>{{ currentUserEmail }}</strong>.</p>
-          <p class="signed-in-copy">Tu cuenta tiene el rol {{ currentUser.user_role }}. La interfaz correspondiente a este rol se implementará en la siguiente etapa.</p>
-          <button class="primary-button" type="button" @click="signOut">Cerrar sesión</button>
-        </section>
-        <section v-else class="signed-in">
-          <p class="subtitle">Validando tu sesión…</p>
-        </section>
       </div>
     </section>
   </main>
+  <AdminCatalog
+    v-if="accessToken && currentUser?.user_role === 'store_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <main v-else-if="accessToken && currentUser" class="role-placeholder">
+    <section class="signed-in">
+      <div class="success-icon">✓</div>
+      <h1>¡Bienvenido!</h1>
+      <p class="subtitle">Has iniciado sesión como <strong>{{ currentUserEmail }}</strong>.</p>
+      <p class="signed-in-copy">Tu cuenta tiene el rol {{ currentUser.user_role }}. La interfaz correspondiente a este rol se implementará en la siguiente etapa.</p>
+      <button class="primary-button" type="button" @click="signOut">Cerrar sesión</button>
+    </section>
+  </main>
+  <main v-else-if="accessToken" class="role-placeholder"><p>Validando tu sesión…</p></main>
 </template>
