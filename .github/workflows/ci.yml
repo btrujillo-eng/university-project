@@ -80,4 +80,4 @@ jobs:
         run: python -c "import main; print(f'Loaded {len(main.app.routes)} API routes')"
 
       - name: Run unit tests
-        run: python -m pytest -q
+        run: PYTHONPATH="$GITHUB_WORKSPACE" python -m pytest -q
