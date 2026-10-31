@@ -331,15 +331,15 @@ onMounted(async () => {
           </form>
 
           <form v-else-if="screen === 'recovery'" class="fields recovery-fields" @submit.prevent="submitRecovery">
-            <label class="field"><span>Correo electrónico</span><input v-model.trim="recovery.email" type="email" autocomplete="email" maxlength="255" placeholder="tu@correo.com" required @blur="sendRestoreCode" /></label>
+            <label class="field"><span>Correo electrónico</span><input v-model.trim="recovery.email" type="email" autocomplete="email" maxlength="255" placeholder="tu@correo.com" required /></label>
             <div class="field">
               <span>Código de verificación (6 dígitos)</span>
               <div class="code-inputs" @paste.prevent="(event) => recovery.restore_code = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)">
                 <input v-for="index in 6" :key="index" :value="recovery.restore_code[index - 1] || ''" inputmode="numeric" maxlength="1" :aria-label="'Dígito ' + index + ' del código'" @input="(event) => { const digits = recovery.restore_code.split(''); digits[index - 1] = event.target.value.replace(/\D/g, '').slice(-1); recovery.restore_code = digits.join('').slice(0, 6) }" />
               </div>
-              <p v-if="!codeSent" class="field-hint">Ingresa tu correo para enviarte el código de verificación.</p>
+              <p v-if="!codeSent" class="field-hint">Al continuar enviaremos un código de verificación a tu correo.</p><button v-else type="button" class="inline-link resend-code-button" :disabled="busy" @click="sendRestoreCode">Enviar un nuevo código</button>
             </div>
-            <button class="primary-button" type="submit" :disabled="busy || !recovery.email || (codeSent && recovery.restore_code.length !== 6)">{{ busy ? 'Procesando…' : 'Verificar código' }}</button>
+            <button class="primary-button" type="submit" :disabled="busy || !recovery.email || (codeSent && recovery.restore_code.length !== 6)">{{ busy ? 'Procesando…' : codeSent ? 'Verificar código' : 'Enviar código' }}</button>
           </form>
 
           <form v-else class="fields new-password-fields" @submit.prevent="submitNewPassword">
