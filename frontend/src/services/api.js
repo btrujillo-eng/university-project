@@ -101,3 +101,30 @@ export function updateProductPrice(productId, price, token) {
     body: JSON.stringify({ price }),
   }, token)
 }
+
+export function addCartItem(productId, quantity, token) {
+  return request('/cart/items', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: productId, quantity }),
+  }, token)
+}
+
+export function getCart(token) {
+  return request('/cart/', {}, token)
+}
+
+export function removeCartItem(productId, token) {
+  return request(`/cart/items/${productId}`, { method: 'DELETE' }, token)
+}
+
+export function checkoutOrder(data, idempotencyKey, token) {
+  return request('/orders/checkout', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(data),
+  }, token)
+}
+
+export function getMyOrders(token) {
+  return request('/orders/me', {}, token)
+}
