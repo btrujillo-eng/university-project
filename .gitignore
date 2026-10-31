@@ -1,0 +1,94 @@
+# ==========================================
+# ENVIRONMENT & SECRETS (CRITICAL)
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# PYTHON / FASTAPI / BACKEND
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sast/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Test & Type Checking Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+cython_debug/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# ==========================================
+# NODE / VUE / FRONTEND
+# ==========================================
+node_modules/
+jspm_packages/
+dist/
+.npm
+.eslintcache
+.vite/
+.yarn/
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yaml
+.yarn/install-state.gz
+
+# ==========================================
+# IDEs & EDITORS (VS Code / PyCharm)
+# ==========================================
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+
+# ==========================================
+# OS JUNK & LOGS
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.log
+logs/
+*.sqlite
+*.sqlite3
