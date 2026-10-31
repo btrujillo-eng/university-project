@@ -53,3 +53,10 @@ El formulario de registro envía `contact_info.email`; no envía `user_role` ni 
 ## Alcance
 
 Esta entrega implementa únicamente RF-0001 a RF-0003. El resto de módulos (catálogo, carrito, checkout y pedidos) queda fuera de este incremento.
+
+
+## Tienda del cliente
+
+La interfaz del rol `customer` incluye catálogo, carrito, domicilio, pago, confirmación e historial de pedidos. Configura `VITE_STRIPE_PUBLISHABLE_KEY` en `.env` para habilitar el formulario seguro de tarjeta mediante Stripe.js. Usa únicamente la clave publicable `pk_...`; la clave secreta `sk_...` permanece en el backend.
+
+El checkout valida el pedido mínimo de COP 20.000 que exige actualmente el backend. Los pagos en efectivo quedan pendientes hasta que se registren como pagados en el flujo operativo.
