@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import AdminCatalog from './components/AdminCatalog.vue'
+import StoreManagerDashboard from './components/StoreManagerDashboard.vue'
 import CustomerStore from './components/CustomerStore.vue'
 import PackagingManager from './components/PackagingManager.vue'
 import CourierDashboard from './components/CourierDashboard.vue'
@@ -339,13 +339,7 @@ onMounted(async () => {
       </div>
     </section>
   </main>
-  <AdminCatalog
-    v-if="accessToken && currentUser?.user_role === 'store_manager'"
-    :user="currentUser"
-    :token="accessToken"
-    @logout="signOut"
-  />
-  <StoreOperations
+  <StoreManagerDashboard
     v-if="accessToken && currentUser?.user_role === 'store_manager'"
     :user="currentUser"
     :token="accessToken"
