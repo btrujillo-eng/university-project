@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import AdminCatalog from './components/AdminCatalog.vue'
+import CustomerStore from './components/CustomerStore.vue'
 import {
   getCurrentUser,
   loginUser,
@@ -336,6 +337,12 @@ onMounted(async () => {
   </main>
   <AdminCatalog
     v-if="accessToken && currentUser?.user_role === 'store_manager'"
+    :user="currentUser"
+    :token="accessToken"
+    @logout="signOut"
+  />
+  <CustomerStore
+    v-else-if="accessToken && currentUser?.user_role === 'customer'"
     :user="currentUser"
     :token="accessToken"
     @logout="signOut"
