@@ -468,3 +468,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,107,67,.
 .role-dashboard .admin-topbar,.role-dashboard .operations-header { display:none; }
 @media(max-width:900px){.operations-order-layout{grid-template-columns:1fr}.assignment-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.role-dashboard-nav{flex-wrap:wrap;gap:10px}.role-dashboard-brand{width:100%}.role-dashboard-nav nav{flex:1}.role-dashboard-nav nav button{flex:1}}
 @media(max-width:640px){.operations-page{padding:24px 14px 40px}.operations-title-row{align-items:flex-start;flex-direction:column}.operations-order-row{gap:9px;padding:11px}.operations-order-row > strong{font-size:11px}.operations-order-icon{width:36px;height:36px;flex-basis:36px}.operations-detail{padding:16px}.stock-table th,.stock-table td{padding:10px}.assignment-grid{grid-template-columns:1fr}.assignment-form{align-items:stretch;flex-direction:column}.assignment-form .operations-primary{width:100%}.role-dashboard-nav{padding:12px}.role-dashboard-nav nav{width:100%;order:2}.role-dashboard-exit{position:absolute;top:18px;right:12px}.role-dashboard-brand{width:auto;padding-right:95px}}
+
+
+.google-button-container { display:flex; min-height:44px; justify-content:center; margin-top:4px; }
+.google-button-container iframe { max-width:100%; }
+.resend-code-button { align-self:flex-start; margin-top:-7px; padding:0; font-size:13px; }
+.resend-code-button:disabled { opacity:.55; cursor:not-allowed; }
