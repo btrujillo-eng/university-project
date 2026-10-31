@@ -17,10 +17,17 @@ async function request(path, options = {}, token = null) {
     : await response.text()
 
   if (!response.ok) {
-    const message = typeof payload === 'object' && payload !== null
+    const detail = typeof payload === 'object' && payload !== null
       ? payload.detail || payload.message
       : payload
-    throw new Error(message || `Error HTTP ${response.status}`)
+    const message = typeof detail === 'string'
+      ? detail
+      : detail && typeof detail === 'object' && detail.message
+        ? detail.message
+        : detail
+          ? JSON.stringify(detail)
+          : `Error HTTP ${response.status}`
+    throw new Error(message)
   }
 
   return payload
