@@ -18,6 +18,13 @@ def test_order_and_payment_models_have_one_to_one_relationship() -> None:
     assert "order" in Payment.__mapper__.relationships
 
 
+def test_payment_method_enum_name_matches_postgresql_schema() -> None:
+    method_type = Payment.__table__.c.method.type
+
+    assert method_type.name == "payment_methods"
+    assert method_type.enums == [method.value for method in PaymentMethods]
+
+
 def test_order_response_reads_payment_fields_from_payment_relationship() -> None:
     order = SimpleNamespace(
         id=17,
