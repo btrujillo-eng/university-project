@@ -335,7 +335,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="customer-app">
+  <main class="customer-app" :class="{ 'customer-payment-mode': screen === 'payment' }">
     <header class="customer-header">
       <a href="#" class="customer-brand" @click.prevent="returnToCatalog">
         <span class="customer-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
@@ -422,15 +422,18 @@ onBeforeUnmount(() => {
       </form>
     </section>
 
-    <section v-else-if="screen === 'payment'" class="customer-page checkout-page">
+    <section v-else-if="screen === 'payment'" class="customer-page checkout-page payment-page">
       <div class="customer-back-row"><button type="button" @click="screen = 'delivery'">← Volver a Datos de Domicilio</button></div>
       <p class="checkout-breadcrumb">Catálogo &gt; Mi Carrito &gt; Datos de Domicilio &gt; Datos de Pago</p>
       <h1 class="customer-page-title">Datos de Pago</h1>
       <p class="checkout-subtitle">Por favor, selecciona tu método de pago y revisa el resumen de tu compra.</p>
       <div class="payment-layout">
-        <form class="payment-form" @submit.prevent="submitCheckout">
-          <label class="customer-field"><span>Selecciona tu Método de Pago</span>
-            <select v-model="paymentMethod"><option value="cash">Efectivo contraentrega</option><option value="card">Tarjeta de crédito o débito</option></select>
+        <form id="checkout-payment-form" class="payment-form" @submit.prevent="submitCheckout">
+          <label class="customer-field payment-method-field"><span>Selecciona tu Método de Pago</span>
+            <select v-model="paymentMethod">
+              <option value="card">Tarjeta de Crédito / Débito</option>
+              <option value="cash">Efectivo (Contraentrega)</option>
+            </select>
           </label>
           <div v-if="paymentMethod === 'card'" class="stripe-card-section">
             <p>Datos de tarjeta</p>
@@ -440,19 +443,20 @@ onBeforeUnmount(() => {
           </div>
           <div v-else class="cash-instructions">
             <strong>Instrucciones de Pago en Efectivo (Contraentrega)</strong>
-            <p>• Paga en efectivo directamente al domiciliario autorizado al momento de recibir tu pedido.</p>
-            <p>• Verifica que el monto corresponda al total de tu compra.</p>
-            <p>• Ten listo el pago para agilizar la entrega.</p>
+            <p>• Pagarás en efectivo directamente al domiciliario autorizado al momento de recibir tu pedido.</p>
+            <p>• Por favor, ten el monto exacto completo de <b>{{ formattedTotal }}</b> listo para agilizar la entrega.</p>
+            <p>• Esto ayuda a que el proceso de entrega sea más rápido y seguro para todos.</p>
           </div>
-          <button type="submit" class="customer-primary-button payment-submit" :disabled="busy || (paymentMethod === 'card' && (!stripeReady || Boolean(stripeError)))">{{ busy ? 'Procesando pedido…' : 'Procesar el Pago' }}</button>
         </form>
         <aside class="order-cost-summary">
           <h2>Resumen de tu Compra</h2>
           <div v-for="item in cart.items" :key="item.product_id" class="cost-line"><span>{{ item.product_name }} × {{ quantity(item.quantity) }}</span><strong>{{ money(item.line_total) }}</strong></div>
-          <div class="cost-line"><span>Envío a domicilio</span><strong>Gratis</strong></div>
+          <div class="cost-line"><span>Envío a domicilio ({{ shipping.city }})</span><strong>Gratis</strong></div>
           <div class="cost-total"><span>Total a pagar</span><strong>{{ formattedTotal }}</strong></div>
         </aside>
       </div>
+      <button form="checkout-payment-form" type="submit" class="customer-primary-button payment-submit" :disabled="busy || (paymentMethod === 'card' && (!stripeReady || Boolean(stripeError)))">{{ busy ? 'Procesando pedido…' : 'Proceder al Pago' }}</button>
+      <footer class="payment-footer">© Copyright | Canasta Express -- Links · Privacy Policies</footer>
     </section>
 
     <section v-else-if="screen === 'confirmation'" class="customer-page confirmation-page">
