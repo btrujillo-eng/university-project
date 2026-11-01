@@ -38,7 +38,7 @@ from app.domain.order_workflow import (
 from app.domain.ports.order_repository import IOrderRepository
 from app.infrastructure.database_engine import AsyncSessionLocal
 from app.infrastructure.dtos.user import AuthenticatedUser
-from app.infrastructure.persistence.models import Product, User
+from app.infrastructure.persistence.models import Payment, Product, User
 from app.infrastructure.persistence.models.order_items import OrderItem
 from app.infrastructure.persistence.models.orders import Order
 from app.infrastructure.persistence.repositories.postgresql.cart import CartRepository
@@ -88,8 +88,8 @@ def _to_response(order: Order, *, include_allowed_delivery_statuses: bool = Fals
             if include_allowed_delivery_statuses
             else []
         ),
-        payment_method=order.payment_method,
-        payment_status=order.payment_status,
+        payment_method=order.payment.method,
+        payment_status=order.payment.status,
         created_at=order.created_at,
         shipping_street=order.shipping_street,
         shipping_neighborhood=order.shipping_neighborhood,
@@ -192,8 +192,16 @@ async def checkout(
     customer_name = " ".join(
         part for part in (account.first_name, account.middle_name, account.first_surname, account.middle_surname) if part
     )
+    persisted_payment = Payment(
+        method=data.payment_method.method,
+        status=persisted_payment_status,
+    )
+    session.add(persisted_payment)
+    await session.flush()
+
     order = Order(
         user_id=user.user_id,
+        payment_id=persisted_payment.id,
         idempotency_key=idempotency_key,
         customer_name=customer_name,
         total_price=payment.transaction_amount,
@@ -242,7 +250,7 @@ async def checkout(
             shipping_instructions=order.shipping_instructions,
             shipping_city=order.shipping_city,
             phone_number=order.phone_number,
-            payment_method=order.payment_method,
+            payment_method=order.payment.method,
             total_paid=payment.transaction_amount,
             subtotal=subtotal,
             shipping_cost=SHIPPING_COST,
@@ -415,7 +423,7 @@ async def update_delivery_status(
     if data.delivery_status not in allowed_delivery_transitions(order.delivery_status):
         raise HTTPException(status_code=409, detail="Transición de estado de entrega no permitida")
     if data.delivery_status == DeliveryStatus.DELIVERED and not can_mark_order_delivered(
-        order.payment_method, order.payment_status
+        order.payment.method, order.payment.status
     ):
         raise HTTPException(
             status_code=409,
@@ -443,19 +451,19 @@ async def update_cash_payment_status(
         raise HTTPException(status_code=404, detail="El pedido no existe")
     if order.courier_id != user.user_id:
         raise HTTPException(status_code=403, detail="El pedido no está asignado a este domiciliario")
-    if order.payment_method != PaymentMethods.CASH:
+    if order.payment.method != PaymentMethods.CASH:
         raise HTTPException(status_code=409, detail="Solo se puede actualizar el pago de pedidos en efectivo")
     if data.payment_status != PaymentStatus.SUCCEDED:
         raise HTTPException(status_code=422, detail="El domiciliario solo puede confirmar un pago recibido")
-    if order.payment_status == PaymentStatus.SUCCEDED:
+    if order.payment.status == PaymentStatus.SUCCEDED:
         return _to_response(order)
-    if order.payment_status != PaymentStatus.PENDING:
+    if order.payment.status != PaymentStatus.PENDING:
         raise HTTPException(status_code=409, detail="El pago no está pendiente")
     if order.delivery_status != DeliveryStatus.IN_TRANSIT:
         raise HTTPException(
             status_code=409,
             detail="El pago en efectivo solo puede confirmarse durante la entrega",
         )
-    order.payment_status = PaymentStatus.SUCCEDED
+    order.payment.status = PaymentStatus.SUCCEDED
     await session.commit()
     return _to_response(order)
