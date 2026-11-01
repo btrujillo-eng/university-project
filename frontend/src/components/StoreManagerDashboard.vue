@@ -1,11 +1,15 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AdminCatalog from './AdminCatalog.vue'
 import StoreOperations from './StoreOperations.vue'
 
-defineProps({
+const props = defineProps({
   user: { type: Object, required: true },
   token: { type: String, required: true },
+})
+const userDisplayName = computed(() => {
+  const name = [props.user.first_name, props.user.first_surname].filter(Boolean).join(' ')
+  return name || 'Administrador'
 })
 const emit = defineEmits(['logout'])
 const section = ref('catalog')
@@ -28,7 +32,7 @@ const menuOpen = ref(false)
       </a>
 
       <div class="admin-dashboard-account">
-        <span>Hola, Administrador</span>
+        <span>Hola, {{ userDisplayName }}</span>
         <button
           type="button"
           class="admin-dashboard-menu-toggle"
