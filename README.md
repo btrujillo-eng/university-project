@@ -1,21 +1,280 @@
-# Canasta Express API
+# Canasta Express
 
-Backend REST para la tienda de legumbrería Canasta Express. Está construido con FastAPI, Pydantic, SQLAlchemy asíncrono y PostgreSQL.
+Aplicación web de comercio electrónico para una legumbrería y verdulería. El sistema permite consultar el catálogo, administrar productos, gestionar el carrito y los pedidos, realizar checkout y operar las entregas según el rol del usuario.
 
-## Requisitos y configuración
+> **Estado de la entrega:** este README documenta la estructura y los pasos de instalación del proyecto. El script de inicialización `create_db.sql` y los usuarios semilla de pruebas se incorporarán como parte del paquete final; hasta que esos archivos estén en el repositorio, la creación del esquema se realiza mediante Alembic.
 
-- Python 3.13 y PostgreSQL.
-- Claves de prueba de Stripe y Resend para probar las integraciones externas.
-- Instala dependencias con `python -m pip install -r requirements-prod.txt -r requirements-dev.txt`.
-- Configura en `.env` las variables de base de datos, Stripe, Resend y JWT. Para habilitar Google Sign-In, agrega `GOOGLE_CLIENT_ID` con el ID de cliente OAuth 2.0 de tu aplicación web. No subas secretos al repositorio.
-- En una base vacía, ejecuta `alembic upgrade head`; después inicia con `uvicorn main:app --reload`.
-- La documentación interactiva queda en `/docs`.
+## 1. Tecnologías
 
-## Imágenes de productos y Docker
+| Componente | Tecnología | Versión de referencia |
+| --- | --- | --- |
+| Lenguaje backend | Python | 3.12 |
+| Framework backend | FastAPI | 0.135.3 |
+| Servidor ASGI | Uvicorn | 0.44.0 |
+| Validación y configuración | Pydantic / pydantic-settings | 2.13.0 / 2.13.1 |
+| ORM y migraciones | SQLAlchemy / Alembic | 2.1.4 / 1.20.0 |
+| Driver PostgreSQL | asyncpg | 0.32.0 |
+| Base de datos | PostgreSQL | 16 recomendado |
+| Frontend | Vue | 3.5.x |
+| Herramienta frontend | Vite | 6.x |
+| Runtime frontend | Node.js | 20 o superior |
+| Pruebas backend | pytest | 9.1.1 |
 
-El endpoint de creación de productos recibe ahora un formulario `multipart/form-data` con los campos `name`, `section_id`, `price`, `stock`, `unit_of_measure` y el archivo obligatorio `image`. Solo acepta JPEG, PNG o WebP hasta 5 MiB. El backend genera un nombre aleatorio, guarda la imagen en `MEDIA_ROOT/products` y persiste en `Product.image_path` la ruta pública, por ejemplo `/media/products/ab12....webp`. El cliente puede usar esa ruta como `src` de la imagen del producto; el backend sirve el archivo en `GET /media/products/{filename}`.
+Las dependencias exactas del backend están fijadas en `backend/requirements-prod.txt` y `backend/requirements-dev.txt`. Las dependencias del frontend están declaradas en `frontend/package.json` y bloqueadas en `frontend/package-lock.json`.
 
-Por defecto `MEDIA_ROOT=media`. En Docker, monta un volumen persistente en la ruta que configures como `MEDIA_ROOT`, por ejemplo:
+## 2. Arquitectura general
+
+El repositorio separa el frontend y el backend:
+
+- `frontend/`: aplicación Vue 3, componentes e integración HTTP con la API.
+- `backend/app/api/`: routers y contratos HTTP.
+- `backend/app/application/`: casos de uso y coordinación de operaciones de aplicación.
+- `backend/app/domain/`: reglas y conceptos del dominio.
+- `backend/app/infrastructure/`: persistencia SQLAlchemy, configuración, servicios externos y adaptadores.
+- `backend/alembic/`: migraciones versionadas del esquema de PostgreSQL.
+- `backend/tests/`: pruebas automatizadas del backend.
+- `backend/media/`: ubicación local de archivos multimedia durante desarrollo (configurable mediante `MEDIA_ROOT`).
+
+Flujo simplificado:
+
+```mermaid
+flowchart TD
+    U[Usuario] --> FE[Frontend Vue 3]
+    FE -->|HTTP / JSON / multipart| API[API FastAPI]
+    API --> UC[Casos de uso]
+    UC --> DOM[Dominio]
+    UC --> INF[Infraestructura]
+    INF --> DB[(PostgreSQL)]
+    INF --> EXT[Stripe / Resend / Google OAuth]
+    API --> MEDIA[Archivos de productos]
+```
+
+El backend aplica autorización por rol. Las restricciones de interfaz no sustituyen la validación que realiza la API.
+
+## 3. Requisitos previos
+
+Instala los siguientes componentes en el equipo que ejecutará el proyecto:
+
+- Git.
+- Python 3.12.
+- PostgreSQL 16 (servidor local o contenedor).
+- Node.js 20 o superior y npm.
+- Acceso a internet para instalar dependencias y, si se prueban, utilizar los servicios externos.
+
+El puerto predeterminado de PostgreSQL es `5432`; el backend se ejecuta en `8000` y Vite en `5173`.
+
+## 4. Obtener el código
+
+```bash
+git clone https://github.com/btrujillo-eng/university-project.git
+cd university-project
+```
+
+Si la entrega se realiza mediante un ZIP, descomprímelo y ejecuta los siguientes pasos desde la carpeta raíz del proyecto.
+
+## 5. Configurar PostgreSQL
+
+Crea una base de datos PostgreSQL y prepara dos usuarios con permisos separados:
+
+- Usuario DDL: utilizado por Alembic para crear y modificar el esquema.
+- Usuario DML: utilizado por la aplicación para las operaciones ordinarias sobre los datos.
+
+Los nombres y contraseñas deben coincidir con las variables configuradas en `backend/.env`. El usuario DDL necesita los permisos necesarios para ejecutar las migraciones; el usuario DML debe tener los permisos requeridos por la aplicación, sin privilegios administrativos innecesarios.
+
+### Script de inicialización previsto: `create_db.sql`
+
+Para facilitar la instalación por parte de otro equipo, la entrega final incluirá un archivo `create_db.sql` que permitirá crear la base de datos y todas sus tablas, además de insertar los datos iniciales necesarios para las pruebas manuales.
+
+El script incluirá cuentas de prueba para los distintos roles del sistema:
+
+- `customer`
+- `store_manager`
+- `warehouse_manager`
+- `packaging_manager`
+- `courier`
+
+Las contraseñas de esas cuentas se almacenarán en la base de datos únicamente como hashes compatibles con el mecanismo de autenticación de la aplicación. Para facilitar las pruebas manuales, el propio script documentará cada contraseña en texto plano mediante comentarios SQL junto al usuario correspondiente. Esas credenciales serán exclusivas del entorno de pruebas y no deben reutilizarse en producción.
+
+**Importante:** `create_db.sql` está previsto para la entrega final y todavía no forma parte del repositorio en esta revisión. Mientras se incorpora, utiliza el procedimiento de migraciones descrito a continuación. No intentes ejecutar el comando de `create_db.sql` hasta que el archivo esté disponible.
+
+### Inicializar el esquema con Alembic (procedimiento disponible actualmente)
+
+Desde la raíz del repositorio:
+
+```bash
+cd backend
+```
+
+Crea y activa un entorno virtual:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+En Windows PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.venv\\Scripts\\Activate.ps1
+```
+
+Instala las dependencias:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements-prod.txt -r requirements-dev.txt
+```
+
+Crea el archivo de variables de entorno:
+
+```bash
+cp .env.example .env
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edita `.env` con los datos reales del entorno local. Después ejecuta las migraciones:
+
+```bash
+alembic upgrade head
+```
+
+Las migraciones crean y actualizan el esquema. No ejecutes este procedimiento sobre una base de datos que contenga información importante sin realizar antes un respaldo.
+
+## 6. Variables de entorno
+
+La plantilla se encuentra en `backend/.env.example`. Configura, como mínimo:
+
+| Variable | Propósito |
+| --- | --- |
+| `DDL_DB_USER` | Usuario PostgreSQL para migraciones |
+| `DDL_USER_PASSWORD` | Contraseña del usuario DDL |
+| `DML_DB_USER` | Usuario PostgreSQL de la aplicación |
+| `DML_USER_PASSWORD` | Contraseña del usuario DML |
+| `DB_HOST` | Host de PostgreSQL |
+| `DB_PORT` | Puerto PostgreSQL, normalmente `5432` |
+| `DB_NAME` | Nombre de la base de datos |
+| `JWT_SECRET_KEY` | Secreto privado para firmar los JWT |
+| `JWT_ALGORITHM` | Algoritmo de firma configurado |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del token de acceso |
+| `STRIPE_API_KEY` | Clave secreta de Stripe para pruebas |
+| `RESEND_API_KEY` | Clave de Resend para correos |
+| `GOOGLE_CLIENT_ID` | Client ID OAuth usado por el backend |
+
+El frontend dispone de su propia plantilla en `frontend/.env.example`:
+
+- `VITE_API_BASE_URL`: base de la API.
+- `VITE_BACKEND_TARGET`: destino del proxy de desarrollo de Vite.
+- `VITE_GOOGLE_CLIENT_ID`: Client ID de Google Identity Services.
+- `VITE_STRIPE_PUBLISHABLE_KEY`: clave publicable de Stripe, si se habilita el pago con tarjeta.
+
+No publiques archivos `.env`, claves privadas, contraseñas ni tokens. Los valores de `.env.example` son marcadores de posición, no credenciales funcionales. Para Google, el Client ID del frontend debe corresponder al configurado en el backend. Para Stripe, utiliza claves de prueba.
+
+## 7. Ejecutar el backend
+
+Desde `backend/`, con el entorno virtual activo y PostgreSQL disponible:
+
+```bash
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+La API estará disponible en:
+
+- API: http://127.0.0.1:8000
+- Documentación Swagger: http://127.0.0.1:8000/docs
+- Documentación ReDoc: http://127.0.0.1:8000/redoc
+
+## 8. Ejecutar el frontend
+
+Abre otra terminal desde la raíz del repositorio:
+
+```bash
+cd frontend
+npm install
+```
+
+Crea el archivo de entorno:
+
+```bash
+cp .env.example .env
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Revisa las variables de `frontend/.env` y arranca Vite:
+
+```bash
+npm run dev
+```
+
+Abre http://localhost:5173.
+
+Para comprobar la compilación de producción:
+
+```bash
+npm run build
+npm run preview
+```
+
+El proxy configurado en Vite se utiliza únicamente durante el desarrollo. En un despliegue, configura `VITE_API_BASE_URL` con la dirección pública de la API y permite el origen del frontend en la configuración CORS del backend.
+
+## 9. Roles y usuarios de prueba
+
+El backend reconoce los siguientes roles:
+
+| Rol | Responsabilidad principal |
+| --- | --- |
+| `customer` | Consultar catálogo, gestionar su carrito, realizar compras y consultar sus pedidos |
+| `store_manager` | Administrar productos y precios, y asignar domiciliarios |
+| `warehouse_manager` | Actualizar las existencias de productos |
+| `packaging_manager` | Consultar pedidos pendientes y confirmar el empaque |
+| `courier` | Consultar pedidos asignados y actualizar su estado de entrega |
+
+La entrega final incluirá usuarios semilla para probar cada rol. El archivo `create_db.sql` contendrá los hashes de contraseña que necesita el sistema y, como comentarios SQL destinados exclusivamente a pruebas manuales, las contraseñas en texto plano asociadas a cada cuenta.
+
+**No se deben inventar ni asumir credenciales antes de incorporar el script.** Hasta ese momento, registra usuarios mediante el endpoint de registro (que asigna el rol `customer`) o prepara cuentas de prueba mediante un procedimiento administrativo controlado. No asignes roles privilegiados desde el frontend.
+
+## 10. Funcionalidades y endpoints principales
+
+| Funcionalidad | Método y ruta |
+| --- | --- |
+| Registro | `POST /register/user/` |
+| Inicio de sesión | `POST /users/v1/auth/token` |
+| Inicio de sesión con Google | `POST /users/v1/auth/google` |
+| Solicitar código de recuperación | `POST /users/v1/auth/password/restore-code` |
+| Verificar código | `POST /users/v1/auth/password/verify` |
+| Restablecer contraseña | `POST /users/v1/auth/password/reset` |
+| Consultar catálogo | `GET /products/` |
+| Crear producto | `POST /products/` |
+| Actualizar precio | `PATCH /products/{product_id}/price` |
+| Actualizar existencias | `PATCH /products/{product_id}/stock` |
+| Consultar carrito | `GET /cart/` |
+| Agregar producto al carrito | `POST /cart/items` |
+| Quitar producto del carrito | `DELETE /cart/items/{product_id}` |
+| Checkout | `POST /orders/checkout` |
+
+La recuperación de contraseña utiliza un código de seis dígitos con vigencia de 10 minutos. El inicio de sesión con Google requiere que el frontend obtenga un ID token mediante Google Identity Services; el backend valida su firma, audiencia y correo verificado antes de emitir el JWT propio. Las cuentas nuevas creadas mediante Google reciben el rol `customer`.
+
+El checkout requiere el header `Idempotency-Key`, valida las existencias y el pedido mínimo actual de COP 20.000. Reutiliza la misma clave únicamente al reintentar la misma operación lógica tras un timeout o error de red. Un nuevo intento de compra debe utilizar una clave nueva. El endpoint genérico público `/payments/` fue retirado: el checkout del pedido es el punto de entrada para procesar el pago.
+
+Las cantidades admiten hasta tres decimales para productos vendidos por peso; los productos vendidos por unidad solo aceptan cantidades enteras. Los descuentos no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`.
+
+## 11. Imágenes de productos
+
+La creación de productos utiliza `multipart/form-data` y requiere los campos `name`, `section_id`, `price`, `stock`, `unit_of_measure` y el archivo `image`. Se aceptan JPEG, PNG y WebP de hasta 5 MiB. El backend genera un nombre aleatorio, guarda el archivo en `MEDIA_ROOT/products` y persiste la ruta pública en `Product.image_path`.
+
+Por defecto, `MEDIA_ROOT=media`. En desarrollo, los archivos se sirven desde `/media`. En Docker, monta un volumen persistente en la ruta configurada como `MEDIA_ROOT`; realiza copias de seguridad de ese volumen y compártelo entre las réplicas que necesiten servir las imágenes.
+
+Ejemplo de montaje:
 
 ```yaml
 services:
@@ -29,93 +288,53 @@ volumes:
   product_media:
 ```
 
-El volumen debe persistir entre recreaciones de contenedores y ser compartido por todas las réplicas que sirvan imágenes. Haz backup de ese volumen. No montes la carpeta de imágenes en un directorio público de escritura arbitraria. Las imágenes existentes deben migrarse al volumen antes de desplegar si ya hay registros con rutas guardadas.
+## 12. Pruebas y verificación
 
-Ejemplo de creación desde el navegador:
-
-```javascript
-const form = new FormData();
-form.append("name", "Tomate chonto");
-form.append("section_id", "1");
-form.append("price", "4500.00");
-form.append("stock", "20");
-form.append("unit_of_measure", "kilogram");
-form.append("image", selectedFile);
-const response = await fetch("/products/", {
-  method: "POST",
-  headers: { Authorization: `Bearer ${token}` },
-  body: form
-});
-```
-
-No establezcas manualmente el header `Content-Type`: el navegador debe agregar el boundary del multipart.
-
-## Endpoints principales
-
-- Usuarios: registro, inicio de sesión con correo/contraseña, inicio de sesión con Google (`POST /users/v1/auth/google`, JSON `{ "id_token": "<Google ID token>" }`) y restauración de contraseña por correo mediante un código de seis dígitos, válido durante 10 minutos. El frontend debe obtener el ID token con Google Identity Services; el backend valida firma, audiencia y correo verificado antes de emitir su propio JWT. Las cuentas Google nuevas usan el rol `customer`. No se vincula automáticamente una cuenta existente por coincidencia de correo.
-- Catálogo: `GET /products/` con filtros opcionales `search`, `section_id`, `limit` (1–100, predeterminado 50) y `offset`; `POST /products/` para el administrador de tienda.
-- Precio: `PATCH /products/{product_id}/price` (administrador de tienda).
-- Stock: `PATCH /products/{product_id}/stock` (administrador de bodega).
-- Carrito: `GET /cart/`, `POST /cart/items`, `DELETE /cart/items/{product_id}`.
-- Checkout: `POST /orders/checkout`; requiere el header `Idempotency-Key` con una clave única por intento lógico (por ejemplo, `crypto.randomUUID()`). Reutiliza la misma clave solo al reintentar exactamente el mismo checkout tras un timeout o error de red; para un nuevo intento después de un pago rechazado, genera otra clave. Valida stock y mínimo de COP 20.000. Stripe recibe la misma clave para evitar crear un segundo PaymentIntent si se reintenta la misma solicitud. Si el pedido ya quedó persistido, repetir la clave devuelve `409` con el ID del pedido; consulta el historial para obtener su detalle. Es el único punto de entrada público para procesar un pago; el endpoint genérico `/payments/` se retiró para impedir que el cliente enviara importes arbitrarios fuera de un pedido validado.
-- Pedidos: historial del cliente, consulta y confirmación de empaque, asignación de domiciliario, estados de entrega y confirmación de efectivo. Los listados aceptan `limit` (1–100, predeterminado 50) y `offset` para paginar.
-
-Los descuentos del checkout no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`. Las cantidades de carrito y pedido admiten hasta tres decimales para soportar pesos fraccionarios (por ejemplo, 1.5 kg); los productos vendidos por unidad solo aceptan cantidades enteras. El stock también admite tres decimales. Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
-
-## Pruebas y CI
+Desde `backend/`:
 
 ```bash
-python -m compileall -q app tests main.py scripts
+python -m compileall -q app tests main.py
 python -m pytest -q
 ```
 
-GitHub Actions compila, importa la API, ejecuta la migración contra PostgreSQL temporal y ejecuta las pruebas automatizadas.
+GitHub Actions ejecuta validaciones automatizadas, incluida la compilación/importación de la API, migraciones sobre PostgreSQL temporal y pruebas.
 
-Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3`. El script crea cuentas persistentes y debe usarse solo con una base desechable.
+Para ejecutar la prueba de rendimiento de autenticación contra un entorno desechable:
 
-## Limitaciones conocidas
-
-- Stripe y PostgreSQL no comparten una transacción distribuida. El header `Idempotency-Key` evita repetir un PaymentIntent para la misma clave de usuario, incluso si la primera solicitud falla al persistir el pedido; la aplicación aún requiere reconciliación operativa de pagos huérfanos antes de producción.
-- La integración Stripe actual usa tokens de prueba; antes de producción, el frontend debe tokenizar con Stripe.js y el backend no debe recibir ni almacenar número completo de tarjeta ni CVV.
-- La CI no sustituye pruebas reales con credenciales de Stripe/Resend ni pruebas de carga en el entorno desplegado.
-
-
-## Contratos ampliados para los mockups
-
-- `GET /products/sections` devuelve `id` y `name` de cada sección para llenar selectores.
-- `GET /products/?search=...` busca por nombre del producto o nombre de la sección; también admite `section_id`. Los productos incluyen `section_name` e `image_path`.
-- `CheckoutRequest.shipping` recibe `street`, `neighborhood`, `department`, `details`, `delivery_instructions` (opcional), `city` y `phone_number`.
-- Los pedidos y artículos ahora incluyen nombre del cliente, datos de domicilio, teléfono e `image_path` por artículo. El recibo digital incluye los datos del comprador y el desglose subtotal/envío/total.
-- El costo de envío está actualmente fijado en COP 0.00 porque no existe una tarifa definida en los requisitos. Cambia `SHIPPING_COST` cuando se acuerde una regla de negocio; no uses el valor de presentación como fuente de verdad.
-- Para compatibilidad con registros previos, la migración agrega los nuevos campos con valores por defecto vacíos. Los pedidos antiguos no recuperan mágicamente barrio/departamento; deben actualizarse si necesitas mostrar esos datos históricos.
-
-
-### Integración segura de tarjeta
-
-El checkout con tarjeta recibe `payment_method_id` de Stripe (un ID `pm_...` generado mediante Stripe.js/Elements en el navegador). No envíes `card_number` ni `cvv` al backend. El gateway crea un PaymentIntent y registra en la respuesta únicamente la marca y los últimos cuatro dígitos de la tarjeta. La integración debe probarse con claves y métodos de pago de prueba de Stripe antes de conectar el frontend.
-
-
-### Cambios de esquema para Google Sign-In
-
-La revisión Alembic `20261029_03` permite `users.password_hash` nulo y agrega `users.google_sub` nullable con índice único. Los usuarios locales conservan su hash; las cuentas Google pueden no tener contraseña local. Ejecuta `alembic upgrade head` después de respaldar la base de datos. Si aplicas el cambio manualmente, usa la misma columna e índice para que la migración no duplique el esquema.
-
-
-### Roles y flujo de estados de entrega
-
-El backend valida cada operación según el rol autenticado; ocultar botones en el frontend no sustituye estos controles:
-
-- `customer`: consulta su propio historial y realiza checkout/carrito. No puede consultar pedidos de otros clientes ni modificar estados.
-- `store_manager`: registra productos, actualiza precios, consulta pedidos empacados en `GET /orders/ready-for-assignment`, consulta domiciliarios activos en `GET /orders/couriers` y asigna domiciliarios a pedidos empacados.
-- `warehouse_manager`: actualiza existencias. No puede empacar ni asignar domiciliarios.
-- `packaging_manager`: consulta la cola de pedidos `pending` y confirma el empaque. También puede consultar por separado los pedidos `returned_to_warehouse` para volver a empacarlos.
-- `courier`: solo consulta pedidos asignados a su propio usuario. Puede moverlos de `packaged` a `in_transit`; desde `in_transit` puede confirmar `delivered` o `returned_to_warehouse`. No puede cancelar pedidos, marcar pedidos como empacados ni asignarse pedidos.
-
-Cuando un domiciliario devuelve un pedido a bodega, el backend elimina la asignación anterior. El encargado de empaque debe volver a empacarlo y el administrador de tienda debe asignarlo nuevamente. El pago en efectivo solo puede confirmarse por el domiciliario asignado mientras el pedido está `in_transit`; el backend exige que se confirme antes de marcar el pedido como `delivered`. Los pagos con tarjeta no pueden modificarse desde ese endpoint.
-
-Para actualizar la entrega, el cliente HTTP debe enviar JSON, por ejemplo:
-
-```json
-{ "delivery_status": "returned_to_warehouse" }
+```bash
+python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3
 ```
 
-a `PATCH /orders/{order_id}/delivery-status`. El backend rechaza cualquier transición que no esté permitida, aunque el valor exista en el enum de PostgreSQL. La cola de empaque pendiente se obtiene en `GET /orders/packaging/pending`; las devoluciones se consultan en `GET /orders/packaging/returned`. El endpoint `GET /orders/courier/assigned` incluye `allowed_delivery_statuses` por pedido para que la interfaz muestre únicamente las acciones disponibles, sin reemplazar la validación del servidor.
+Este script crea cuentas persistentes; no lo ejecutes contra una base con datos que deban conservarse.
+
+### Verificación para testing cruzado
+
+Antes de entregar, el equipo que recibe el proyecto debe poder comprobar:
+
+- [ ] Clonar o descomprimir el proyecto e instalar las dependencias.
+- [ ] Configurar PostgreSQL y las variables de entorno usando las plantillas.
+- [ ] Crear el esquema mediante el mecanismo documentado.
+- [ ] Iniciar backend y frontend sin errores.
+- [ ] Iniciar sesión con cuentas de prueba de los diferentes roles.
+- [ ] Ejecutar los flujos funcionales y contrastarlos con los criterios de aceptación del Excel.
+- [ ] Ejecutar las pruebas automatizadas.
+
+Cada requisito funcional y no funcional debe tener un criterio de aceptación verificable y un método de comprobación documentado en el formato Excel de requisitos.
+
+## 13. Entregables académicos
+
+La entrega final del proyecto debe reunir:
+
+1. **Formato Excel completo:** hojas Proyecto, Interesados, Requisitos funcionales, Requisitos no funcionales, Historias de usuario, Casos de uso y Mockups, actualizadas y coherentes con lo implementado.
+2. **Programa implementado:** código fuente del repositorio o ZIP, este README con instrucciones de instalación y ejecución, y usuarios de prueba. Si se realiza un despliegue, se añadirá aquí la URL pública.
+3. **Arquitectura y ambiente:** diagrama de componentes y capas, tecnologías y versiones, dependencias, variables de entorno y script SQL de creación de base de datos y datos de prueba (`create_db.sql`).
+
+**URL de despliegue:** no se ha definido una URL pública para esta revisión. La aplicación se ejecuta localmente siguiendo los pasos anteriores.
+
+## 14. Consideraciones de seguridad y limitaciones
+
+- Nunca envíes al backend el número completo de tarjeta ni el CVV. El flujo de tarjeta debe utilizar Stripe.js/Elements en el navegador y enviar un `payment_method_id`; la clave secreta de Stripe permanece exclusivamente en el backend.
+- Las claves y cuentas de Stripe/Resend utilizadas para pruebas no deben ser credenciales de producción.
+- Stripe y PostgreSQL no comparten una transacción distribuida. Aunque la idempotencia evita duplicar un PaymentIntent para la misma clave, antes de producción se requiere un procedimiento operativo de reconciliación de pagos que no hayan quedado asociados a un pedido.
+- Las credenciales en texto plano que se documenten como comentarios dentro de `create_db.sql` son únicamente para las cuentas semilla locales de testing. Nunca se deben utilizar en un entorno real.
+- Las migraciones Alembic son el mecanismo versionado para evolucionar el esquema. El futuro `create_db.sql` debe mantenerse coherente con esas migraciones para evitar diferencias entre instalaciones nuevas y bases existentes.
