@@ -14,7 +14,8 @@ class OrderRepository(IOrderRepository):
 
     def _base_statement(self):
         return select(Order).options(
-            selectinload(Order.order_items).selectinload(OrderItem.product)
+            selectinload(Order.payment),
+            selectinload(Order.order_items).selectinload(OrderItem.product),
         )
 
     async def get_by_id_for_update(self, order_id: int) -> Order | None:
