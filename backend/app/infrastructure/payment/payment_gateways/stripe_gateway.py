@@ -55,6 +55,12 @@ class StripeGateway(IPaymentGateway):
                 currency=payment_data.currency.value,
                 payment_method=payment_method_id,
                 confirm=True,
+                # This gateway currently supports card payments only. Prevent
+                # Dashboard-enabled redirect methods from requiring a return_url.
+                automatic_payment_methods={
+                    "enabled": True,
+                    "allow_redirects": "never",
+                },
                 description=(
                     f"Charge for {payment_data.user_data.first_name} "
                     f"{payment_data.user_data.first_surname}"
