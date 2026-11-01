@@ -325,7 +325,7 @@ onBeforeUnmount(() => {
   <main class="customer-app">
     <header class="customer-header">
       <a href="#" class="customer-brand" @click.prevent="returnToCatalog">
-        <span class="customer-brand-mark" aria-hidden="true">♧</span>
+        <span class="customer-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
         <span><strong>Canasta Express</strong><small>Legumbrería &amp; Verdulería Online</small></span>
       </a>
       <form class="customer-search" @submit.prevent="screen = 'catalog'; loadProducts()">
@@ -333,10 +333,10 @@ onBeforeUnmount(() => {
         <button type="submit" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
       </form>
       <button type="button" class="customer-cart-shortcut" aria-label="Abrir carrito" @click="openCart">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 1.9-1.4L22 8H6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg><span>{{ quantity(cartCount) }}</span>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M2.5 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 1.9-1.5L21.5 8H5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg><span>{{ quantity(cartCount) }}</span>
       </button>
       <div class="customer-account">
-        <span class="customer-avatar" aria-hidden="true">♙</span>
+        <span class="customer-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.5"/><path d="M5.2 20c.5-3.6 3-5.5 6.8-5.5s6.3 1.9 6.8 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
         <span>Hola, {{ displayName }}</span>
         <button type="button" @click="logout">Salir</button>
       </div>
