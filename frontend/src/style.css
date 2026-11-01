@@ -1,18 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: 'DM Sans', Arial, sans-serif;
+  font-family: 'Oswald', Arial, sans-serif;
   color: #29271f;
   background: #f8f3e8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --forest: #263f2a;
-  --forest-dark: #203824;
-  --terra: #b96b43;
-  --cream: #f8f3e8;
+  --forest: #55583d;
+  --forest-dark: #41442e;
+  --terra: #bd945e;
+  --cream: #f2e3c8;
   --muted: #8b8170;
   --line: #dedbd3;
-  --display: 'Playfair Display', Georgia, serif;
+  --display: 'Roboto Slab', Georgia, serif;\n  --body: 'Oswald', Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 html, body, #app { min-width: 320px; min-height: 100%; margin: 0; }
@@ -164,7 +164,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,107,67,.
 .create-product-layout { display: grid; grid-template-columns: minmax(0, 1fr) 190px; align-items: center; gap: 24px; }
 .create-product-fields { display: flex; flex-direction: column; gap: 12px; }
 .admin-field { display: flex; flex-direction: column; gap: 5px; font: 16px var(--display); }
-.admin-field input, .admin-field select { width: 100%; height: 43px; padding: 0 12px; border: 1px solid #bdb6a8; border-radius: 8px; color: #4d443a; background: #f8f7f2; font: 15px 'DM Sans', sans-serif; }
+.admin-field input, .admin-field select { width: 100%; height: 43px; padding: 0 12px; border: 1px solid #bdb6a8; border-radius: 8px; color: #4d443a; background: #f8f7f2; font: 15px var(--body); }
 .image-upload-card { position: relative; display: flex; min-height: 175px; flex-direction: column; align-items: center; justify-content: center; gap: 9px; overflow: hidden; padding: 12px; border-radius: 17px; color: #635b43; background: #efd2b7; cursor: pointer; text-align: center; }
 .image-upload-card input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
 .image-upload-card > svg { width: 45px; height: 45px; }
@@ -566,3 +566,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,107,67,.
   .quantity-product-details h3 { font-size:22px; }
   .quantity-stepper output { font-size:23px; }
 }
+
+
+/* Shared visual language aligned with Canasta Express mockups */
+body { font-family: var(--body); background: #f0ddc2; }
+input, button, select, textarea { font-family: var(--body); }
+.auth-layout, .form-panel, .role-placeholder { background: #f2e3c8; }
+.form-panel { color: #241f18; }
+.brand-copy strong, .heading h1, .signed-in h1, .story-copy h2 { font-family: var(--display); }
+.brand-copy span, .subtitle, .field, .field input, .primary-button, .switch-copy { font-family: var(--body); }
+.primary-button { background: #55583d; border-radius: 10px; }
+.primary-button:hover:not(:disabled) { background: #41442e; }
+.inline-link { color: #9a653d; }
+.field input { border-radius: 9px; }
+.story-copy h2 { letter-spacing: -.035em; }
+.story-description { font-family: var(--body); }
+.quantity-cancel-button {
+  display: block;
+  width: calc(100% - 44px);
+  min-height: 43px;
+  margin: 9px 22px 0;
+  border: 1px solid #c8bba8;
+  border-radius: 10px;
+  color: #756e62;
+  background: #d9d0c5;
+  cursor: pointer;
+  font: 500 16px var(--body);
+}
+.quantity-cancel-button:hover:not(:disabled) { color: #4b463d; background: #cec3b5; }
+.quantity-cancel-button:disabled { opacity: .55; cursor: wait; }
+.quantity-dialog-heading h2 { font-family: var(--display); }
+.quantity-product-details h3 { font-family: var(--display); }
+.quantity-product-details p { font-family: var(--display); }
+.quantity-stepper button, .quantity-stepper output,
+.quantity-manual-entry, .quantity-price-summary, .quantity-add-button { font-family: var(--body); }
