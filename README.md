@@ -92,6 +92,54 @@ Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `pyth
 
 ### Integración segura de tarjeta
 
+
+#### Tarjetas de prueba de Stripe
+
+Utiliza estas tarjetas exclusivamente con las claves de prueba de Stripe (`sk_test_` y `pk_test_`). No son tarjetas reales y no deben utilizarse en modo producción.
+
+| Resultado esperado | Número de tarjeta | CVV/CVC | Vencimiento |
+|---|---|---|---|
+| Pago aprobado (Visa) | `4242 4242 4242 4242` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura, por ejemplo `12/2030` |
+| Pago rechazado | `4000 0000 0000 0002` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura |
+| Fondos insuficientes | `4000 0000 0000 9995` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura |
+| Requiere autenticación 3D Secure | `4000 0025 0000 3155` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura |
+
+Para estas tarjetas Visa se utiliza un CVC de tres dígitos. En las pruebas, Stripe acepta cualquier fecha futura y cualquier CVC válido para la marca. Para American Express el CVC tiene cuatro dígitos. Consulta la [documentación oficial de Stripe sobre pruebas](https://docs.stripe.com/testing) para más escenarios y marcas de tarjeta.
+
+### Datos semilla: usuarios de prueba
+
+Los datos semilla que se prepararán para la entrega se limitarán a la tabla `users`: habrá una cuenta por cada rol del sistema (`customer`, `store_manager`, `warehouse_manager`, `packaging_manager` y `courier`). No se insertarán productos, secciones, carritos, pedidos ni otros datos de negocio.
+
+La contraseña se almacenará en la columna de hash usando bcrypt, con un coste compatible con el configurado en el backend. Para que el equipo receptor pueda realizar pruebas manuales, el script SQL incluirá la contraseña en texto plano como comentario inmediatamente antes del registro correspondiente. Por ejemplo:
+
+```sql
+-- Texto plano: Cliente123*
+INSERT INTO users (
+    id, first_name, middle_name, first_surname, middle_surname,
+    email, password_hash, role, is_active
+) VALUES (
+    5, 'Maria', 'Elena', 'Torres', 'Castro',
+    'cliente@canasta.com',
+    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
+    'customer',
+    true
+);
+```
+
+El comentario solo documenta qué contraseña debe escribir el probador al iniciar sesión; la aplicación compara la contraseña ingresada contra el hash almacenado. El hash de ejemplo es ilustrativo: al preparar el script real, genera cada hash a partir de su contraseña correspondiente usando el mismo hasher del backend. No copies un hash de ejemplo para todas las cuentas ni almacenes contraseñas en texto plano en las columnas de la base de datos.
+
+### Credenciales de servicios externos para el equipo receptor
+
+Cada equipo debe configurar sus propias credenciales de desarrollo y prueba en los archivos `.env`; el repositorio solo debe contener plantillas `.env.example`, nunca secretos reales.
+
+1. **Stripe:** configura `STRIPE_API_KEY` con la clave secreta de prueba (`sk_test_...`) en el backend. Si el frontend usa Stripe.js, configura también la clave publicable (`pk_test_...` o la variable frontend correspondiente). No uses claves live. Utiliza las tarjetas de prueba indicadas arriba para simular pagos aprobados, rechazados y autenticación adicional.
+2. **Resend:** crea una API key en [Resend](https://resend.com/) y asígnala a `RESEND_API_KEY`. Configura un remitente/dominio permitido por tu cuenta y utiliza una dirección de correo a la que tengas acceso para comprobar los códigos de recuperación y notificaciones.
+3. **Google OAuth:** crea un OAuth 2.0 Client ID de tipo aplicación web en [Google Cloud Console](https://console.cloud.google.com/). Configura ese mismo ID en `GOOGLE_CLIENT_ID` (backend) y `VITE_GOOGLE_CLIENT_ID` (frontend), y autoriza el origen local del frontend, normalmente `http://localhost:5173`.
+4. **PostgreSQL y JWT:** completa las variables de conexión, credenciales DDL/DML y `JWT_SECRET_KEY` con valores propios del entorno local. Genera un secreto JWT nuevo; no utilices el marcador de ejemplo.
+
+Antes de probar, inicia PostgreSQL, verifica que las variables estén cargadas y comprueba que el frontend apunte al backend local. Si no configuras Stripe, Resend o Google OAuth, no podrás probar los flujos que dependen de esos servicios. Nunca envíes números de tarjeta ni CVC al backend: el navegador debe tokenizar la tarjeta mediante Stripe.js/Elements y enviar el identificador de método de pago.
+
+
 El checkout con tarjeta recibe `payment_method_id` de Stripe (un ID `pm_...` generado mediante Stripe.js/Elements en el navegador). No envíes `card_number` ni `cvv` al backend. El gateway crea un PaymentIntent y registra en la respuesta únicamente la marca y los últimos cuatro dígitos de la tarjeta. La integración debe probarse con claves y métodos de pago de prueba de Stripe antes de conectar el frontend.
 
 
