@@ -24,6 +24,7 @@ const selectedProduct = ref(null)
 const selectedOrder = ref(null)
 const buyNowAfterAdd = ref(false)
 const checkoutIdempotencyKey = ref('')
+const checkoutPaymentMethodId = ref('')
 const searchTerm = ref('')
 const quantityDraft = ref('1')
 const quantityStep = computed(() => {
@@ -101,6 +102,11 @@ function statusClass(value) {
 function paymentLabel(value) {
   return value === 'card' ? 'Tarjeta' : 'Efectivo contraentrega'
 }
+function resetCheckoutAttempt() {
+  checkoutIdempotencyKey.value = ''
+  checkoutPaymentMethodId.value = ''
+}
+
 function clearMessages() {
   errorMessage.value = ''
   successMessage.value = ''
@@ -169,6 +175,7 @@ async function addSelectedProduct() {
   clearMessages()
   try {
     cart.value = await addCartItem(selectedProduct.value.id, amount, props.token)
+    resetCheckoutAttempt()
     selectedProduct.value = null
     successMessage.value = 'Producto agregado al carrito.'
     if (buyNowAfterAdd.value) {
@@ -186,6 +193,7 @@ async function deleteCartItem(productId) {
   clearMessages()
   try {
     cart.value = await removeCartItem(productId, props.token)
+    resetCheckoutAttempt()
   } catch (error) {
     showError(error)
   } finally {
@@ -241,6 +249,7 @@ async function mountStripeCard() {
   }
 }
 watch(paymentMethod, async (value) => {
+  resetCheckoutAttempt()
   if (value === 'card' && screen.value === 'payment') {
     await mountStripeCard()
   } else if (value !== 'card' && stripeCardElement.value && stripeReady.value) {
@@ -261,13 +270,19 @@ async function submitCheckout() {
       if (!stripeInstance.value || !stripeCardElement.value) {
         throw new Error(stripeError.value || 'El formulario de tarjeta no está disponible.')
       }
-      const result = await stripeInstance.value.createPaymentMethod({
-        type: 'card',
-        card: stripeCardElement.value,
-        billing_details: { name: displayName.value, phone: shipping.phone_number },
-      })
-      if (result.error) throw new Error(result.error.message)
-      payment = { method: 'card', payment_method_id: result.paymentMethod.id }
+      // Reuse the same PaymentMethod and idempotency key when retrying an
+      // uncertain request. A fresh PaymentMethod with the old key changes the
+      // Stripe request parameters and triggers an IdempotencyError.
+      if (!checkoutPaymentMethodId.value) {
+        const result = await stripeInstance.value.createPaymentMethod({
+          type: 'card',
+          card: stripeCardElement.value,
+          billing_details: { name: displayName.value, phone: shipping.phone_number },
+        })
+        if (result.error) throw new Error(result.error.message)
+        checkoutPaymentMethodId.value = result.paymentMethod.id
+      }
+      payment = { method: 'card', payment_method_id: checkoutPaymentMethodId.value }
     } else {
       payment = { method: 'cash' }
     }
@@ -276,7 +291,7 @@ async function submitCheckout() {
       shipping: { ...shipping },
       payment_method: payment,
     }, checkoutIdempotencyKey.value, props.token)
-    checkoutIdempotencyKey.value = ''
+    resetCheckoutAttempt()
     checkoutResult.value = result
     receipt.value = result.receipt
     cart.value = { cart_id: null, items: [], total: 0 }
@@ -287,6 +302,9 @@ async function submitCheckout() {
     }
     screen.value = 'confirmation'
   } catch (error) {
+    // A 402 is a definitive payment failure from the API. The next attempt
+    // must use a new PaymentMethod and a new Stripe idempotency key.
+    if (error?.status === 402) resetCheckoutAttempt()
     if (error?.status === 409 && error?.detail && typeof error.detail === 'object' && error.detail.order_id) {
       screen.value = 'history'
       await loadOrders()
