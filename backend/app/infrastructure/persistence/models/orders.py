@@ -33,7 +33,7 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     courier_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
     customer_name: Mapped[str] = mapped_column(String(100), nullable=False, default="")
-    payment_id: Mapped[Payment] = mapped_column(Integer, ForeignKey("payments.id"), nullable=False)
+    payment_id: Mapped[int] = mapped_column(Integer, ForeignKey("payments.id"), nullable=False, unique=True)
     idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     total_price: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=2), nullable=False)
     delivery_status: Mapped[DeliveryStatus] = mapped_column(
@@ -52,5 +52,5 @@ class Order(Base):
     phone_number: Mapped[str] = mapped_column(String(10), nullable=False)
 
     user: Mapped[User] = relationship(back_populates="orders", foreign_keys=[user_id])
-    payment: Mapped[Payment] = relationship(back_populates="order", foreign_keys=[payment_id])
+    payment: Mapped[Payment] = relationship(back_populates="order", foreign_keys=[payment_id], uselist=False)
     order_items: Mapped[list[OrderItem]] = relationship(back_populates="order")
