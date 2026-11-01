@@ -18,19 +18,18 @@ if TYPE_CHECKING:
 class Payment(Base):
     __tablename__ = "payments"
 
-
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus, name="payment_status", values_callable=get_enum_value), nullable=False
     )
     method: Mapped[PaymentMethods] = mapped_column(
-        Enum(PaymentMethods, name="payment_method", values_callable=get_enum_value), nullable=False
+        # Keep this name aligned with the existing PostgreSQL enum type.
+        Enum(PaymentMethods, name="payment_methods", values_callable=get_enum_value), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.current_timestamp(), onupdate=func.now()
     )
-
 
     order: Mapped[Order | None] = relationship(
         back_populates="payment",
