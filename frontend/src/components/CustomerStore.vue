@@ -26,6 +26,13 @@ const buyNowAfterAdd = ref(false)
 const checkoutIdempotencyKey = ref('')
 const searchTerm = ref('')
 const quantityDraft = ref('1')
+const quantityStep = computed(() => {
+  const unit = selectedProduct.value?.unit_of_measure
+  return unit === 'unit' ? 1 : unit === 'gram' ? 100 : 0.5
+})
+const quantityUnitLabel = computed(() => unitLabel(selectedProduct.value?.unit_of_measure || ''))
+const quantityTitleUnit = computed(() => ({ kilogram: 'kilos', gram: 'gramos', pound: 'libras', unit: 'unidades' })[selectedProduct.value?.unit_of_measure] || 'unidades')
+const selectedQuantityTotal = computed(() => Number(selectedProduct.value?.price || 0) * Number(quantityDraft.value || 0))
 const busy = ref(false)
 const loading = ref(true)
 const errorMessage = ref('')
@@ -140,7 +147,13 @@ function openQuantityDialog(product, buyNow = false) {
   clearMessages()
   buyNowAfterAdd.value = buyNow
   selectedProduct.value = product
-  quantityDraft.value = '1'
+  quantityDraft.value = product.unit_of_measure === 'unit' ? '1' : product.unit_of_measure === 'gram' ? '100' : '0.5'
+}
+function adjustSelectedQuantity(direction) {
+  if (!selectedProduct.value) return
+  const next = Number(quantityDraft.value || 0) + quantityStep.value * direction
+  const bounded = Math.min(Number(selectedProduct.value.stock), Math.max(quantityStep.value, next))
+  quantityDraft.value = String(Number(bounded.toFixed(3)))
 }
 function closeQuantityDialog() {
   selectedProduct.value = null
@@ -509,15 +522,33 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div v-if="selectedProduct" class="customer-modal-backdrop" @click.self="closeQuantityDialog">
-      <form class="customer-quantity-modal" @submit.prevent="addSelectedProduct">
+    <div v-if="selectedProduct" class="customer-modal-backdrop quantity-dialog-backdrop" @click.self="closeQuantityDialog">
+      <form class="customer-quantity-modal quantity-dialog" @submit.prevent="addSelectedProduct">
         <button type="button" class="modal-close" aria-label="Cerrar" @click="closeQuantityDialog">×</button>
-        <img v-if="selectedProduct.image_path" :src="imageUrl(selectedProduct.image_path)" :alt="selectedProduct.name" />
-        <h2>¿Cuántos {{ unitLabel(selectedProduct.unit_of_measure) }} de {{ selectedProduct.name }} necesitas?</h2>
-        <p>Disponible: {{ quantity(selectedProduct.stock) }} {{ unitLabel(selectedProduct.unit_of_measure) }}</p>
-        <label class="customer-field"><span>Cantidad</span><input v-model="quantityDraft" type="number" min="0.001" :max="selectedProduct.stock" step="0.001" required /></label>
-        <strong>{{ money(Number(selectedProduct.price) * Number(quantityDraft || 0)) }}</strong>
-        <button type="submit" class="customer-primary-button" :disabled="busy">{{ busy ? 'Agregando…' : 'Agregar al carrito' }}</button>
+        <header class="quantity-dialog-heading">
+          <h2>¿Cuántos {{ quantityTitleUnit }} de {{ selectedProduct.name }} necesitas?</h2>
+        </header>
+        <section class="quantity-product-summary">
+          <img v-if="selectedProduct.image_path" :src="imageUrl(selectedProduct.image_path)" :alt="selectedProduct.name" />
+          <div class="quantity-product-details">
+            <h3>{{ selectedProduct.name }}</h3>
+            <p>{{ money(selectedProduct.price) }} / {{ quantityUnitLabel }}</p>
+            <small>Disponible: {{ quantity(selectedProduct.stock) }} {{ quantityUnitLabel }}</small>
+          </div>
+        </section>
+        <div class="quantity-control-section">
+          <div class="quantity-stepper">
+            <button type="button" aria-label="Disminuir cantidad" :disabled="Number(quantityDraft) <= quantityStep || busy" @click="adjustSelectedQuantity(-1)">−</button>
+            <output aria-live="polite">{{ quantity(quantityDraft) }} {{ quantityUnitLabel }}</output>
+            <button type="button" aria-label="Aumentar cantidad" :disabled="Number(quantityDraft) + quantityStep > Number(selectedProduct.stock) || busy" @click="adjustSelectedQuantity(1)">+</button>
+          </div>
+          <label class="quantity-manual-entry"><span>O ingresa otra cantidad</span><input v-model="quantityDraft" type="number" min="0.001" :max="selectedProduct.stock" step="0.001" required /></label>
+        </div>
+        <div class="quantity-price-summary">
+          <span>Precio por {{ quantityUnitLabel }}: <strong>{{ money(selectedProduct.price) }}</strong></span>
+          <p>Total: <strong>{{ money(selectedQuantityTotal) }}</strong></p>
+        </div>
+        <button type="submit" class="customer-primary-button quantity-add-button" :disabled="busy || !Number.isFinite(Number(quantityDraft)) || Number(quantityDraft) <= 0 || Number(quantityDraft) > Number(selectedProduct.stock)">{{ busy ? 'Agregando…' : 'Agregar al carrito' }}</button>
       </form>
     </div>
   </main>
