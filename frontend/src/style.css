@@ -12,7 +12,8 @@
   --cream: #f2e3c8;
   --muted: #8b8170;
   --line: #dedbd3;
-  --display: 'Roboto Slab', Georgia, serif;\n  --body: 'Oswald', Arial, sans-serif;
+  --display: 'Roboto Slab', Georgia, serif;
+  --body: 'Oswald', Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 html, body, #app { min-width: 320px; min-height: 100%; margin: 0; }
