@@ -22,7 +22,7 @@ const busy = ref(false)
 const loading = ref(true)
 const errorMessage = ref('')
 const successMessage = ref('')
-const editingProductId = ref(null)
+const editingProduct = ref(null)
 const priceDraft = ref('')
 const selectedImage = ref(null)
 const imagePreview = ref('')
@@ -156,19 +156,21 @@ async function submitProduct() {
 
 function startPriceEdit(product) {
   clearMessages()
-  editingProductId.value = product.id
+  editingProduct.value = product
   priceDraft.value = String(product.price)
 }
 
 function cancelPriceEdit() {
-  editingProductId.value = null
+  editingProduct.value = null
   priceDraft.value = ''
 }
 
-async function savePrice(product) {
+async function savePrice() {
+  if (!editingProduct.value) return
   clearMessages()
   busy.value = true
   try {
+    const product = editingProduct.value
     const updated = await updateProductPrice(product.id, priceDraft.value, props.token)
     const index = products.value.findIndex((item) => item.id === product.id)
     if (index !== -1) products.value[index] = updated
@@ -226,17 +228,7 @@ onUnmounted(() => {
           <div class="admin-product-info">
             <h2>{{ product.name }}</h2>
             <p>{{ formatPrice(product.price) }} / {{ unitLabels[product.unit_of_measure] || product.unit_of_measure }} disponible: {{ formatQuantity(product.stock) }} {{ unitLabels[product.unit_of_measure] || product.unit_of_measure }}</p>
-            <template v-if="editingProductId === product.id">
-              <form class="price-edit-form" @submit.prevent="savePrice(product)">
-                <label :for="`price-${product.id}`">Nuevo precio (COP)</label>
-                <input :id="`price-${product.id}`" v-model="priceDraft" type="number" min="0.01" step="0.01" required />
-                <div class="price-edit-actions">
-                  <button type="button" class="price-cancel-button" @click="cancelPriceEdit">Cancelar</button>
-                  <button type="submit" class="price-save-button" :disabled="busy">Guardar</button>
-                </div>
-              </form>
-            </template>
-            <button v-else type="button" class="edit-price-button" @click="startPriceEdit(product)">Editar precio</button>
+            <button type="button" class="edit-price-button" @click="startPriceEdit(product)">Editar precio</button>
           </div>
         </article>
       </div>
@@ -298,5 +290,34 @@ onUnmounted(() => {
         <p v-if="!sections.length" class="admin-form-hint">No hay secciones disponibles. Debes registrar una sección antes de crear productos.</p>
       </form>
     </section>
+
+    <div v-if="editingProduct" class="price-modal-backdrop" @click.self="!busy && cancelPriceEdit()" @keydown.esc="!busy && cancelPriceEdit()">
+      <section class="price-modal" role="dialog" aria-modal="true" :aria-labelledby="'price-modal-title'">
+        <header class="price-modal-header">
+          <h2 id="price-modal-title">Actualizar Precio</h2>
+        </header>
+        <form class="price-modal-content" @submit.prevent="savePrice">
+          <h3>Actualizar Precio: <strong>{{ editingProduct.name }}</strong></h3>
+          <div class="price-modal-product">
+            <img v-if="editingProduct.image_path" :src="imageUrl(editingProduct.image_path)" :alt="editingProduct.name" />
+            <div v-else class="price-modal-image-placeholder">♧</div>
+            <div>
+              <p class="price-modal-product-name">{{ editingProduct.name }}</p>
+              <p>Disponible: {{ formatQuantity(editingProduct.stock) }} {{ unitLabels[editingProduct.unit_of_measure] || editingProduct.unit_of_measure }}</p>
+            </div>
+          </div>
+          <p class="price-modal-current">Precio actual por {{ unitLabels[editingProduct.unit_of_measure] || editingProduct.unit_of_measure }}: {{ formatPrice(editingProduct.price) }}</p>
+          <label class="price-modal-field" :for="'price-modal-input'">
+            <input id="price-modal-input" v-model="priceDraft" type="number" min="0.01" max="99999999.99" step="0.01" placeholder="Nuevo precio" required autofocus />
+            <span>Introduce el nuevo precio por {{ unitLabels[editingProduct.unit_of_measure] || editingProduct.unit_of_measure }}</span>
+          </label>
+          <p v-if="errorMessage" class="admin-notice error" role="alert">{{ errorMessage }}</p>
+          <div class="price-modal-actions">
+            <button type="submit" class="price-modal-confirm" :disabled="busy">{{ busy ? 'Guardando…' : '✓ Confirmar Cambios' }}</button>
+            <button type="button" class="price-modal-cancel" :disabled="busy" @click="cancelPriceEdit">Cancelar</button>
+          </div>
+        </form>
+      </section>
+    </div>
   </main>
 </template>
