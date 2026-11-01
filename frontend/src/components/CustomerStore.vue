@@ -228,6 +228,7 @@ async function mountStripeCard() {
   if (!stripeCardElement.value) {
     const elements = stripeInstance.value.elements()
     stripeCardElement.value = elements.create('card', {
+      hidePostalCode: true,
       style: {
         base: { fontFamily: 'DM Sans, sans-serif', fontSize: '16px', color: '#29271f', '::placeholder': { color: '#918a7d' } },
         invalid: { color: '#b33b2e' },
