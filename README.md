@@ -2,7 +2,7 @@
 
 Aplicación web de comercio electrónico para una legumbrería y verdulería. El sistema permite consultar el catálogo, administrar productos, gestionar el carrito y los pedidos, realizar checkout y operar las entregas según el rol del usuario.
 
-> **Estado de la entrega:** este README documenta la estructura y los pasos de instalación del proyecto. El equipo del proyecto preparará `create_db.sql` y los datos semilla para las pruebas manuales. Cuando esos archivos estén incorporados, se actualizarán estas instrucciones con el procedimiento exacto de ejecución. Mientras tanto, el esquema puede inicializarse mediante Alembic.
+> **Nota sobre la base de datos:** el equipo del proyecto preparará `create_db.sql`. El script creará la base de datos y todas sus tablas, pero los únicos datos semilla que insertará serán las cuentas de la tabla `users`, una por cada rol de la aplicación. No incluirá productos, secciones, pedidos ni otros registros de negocio.
 
 ## 1. Tecnologías
 
@@ -83,7 +83,7 @@ Los nombres y contraseñas deben coincidir con las variables configuradas en `ba
 
 ### Script de inicialización previsto: `create_db.sql`
 
-El equipo del proyecto incorporará un archivo `create_db.sql` como parte de la entrega. Este script estará destinado a crear la base de datos y todas sus tablas, además de insertar los datos iniciales necesarios para las pruebas manuales.
+El equipo del proyecto incorporará un archivo `create_db.sql` como parte de la entrega. Este script creará la base de datos y todas sus tablas. Los únicos datos que insertará serán usuarios de prueba en la tabla `users`, con los distintos roles del sistema para que el equipo receptor pueda iniciar sesión y comprobar las interfaces correspondientes. No se precargarán productos, secciones, carritos, pedidos ni otros datos de negocio.
 
 El script incluirá cuentas de prueba para los distintos roles del sistema:
 
@@ -95,7 +95,7 @@ El script incluirá cuentas de prueba para los distintos roles del sistema:
 
 Las contraseñas de esas cuentas se almacenarán en la base de datos únicamente como hashes compatibles con el mecanismo de autenticación de la aplicación. Para facilitar las pruebas manuales, el propio script documentará cada contraseña en texto plano mediante comentarios SQL junto al usuario correspondiente. Esas credenciales serán exclusivas del entorno de pruebas y no deben reutilizarse en producción.
 
-**Importante:** la preparación de `create_db.sql` y de sus datos semilla queda a cargo del equipo del proyecto. Cuando el archivo se incorpore, se debe documentar aquí su comando de ejecución exacto. Hasta entonces, utiliza el procedimiento de migraciones descrito a continuación.
+**Importante:** la preparación de `create_db.sql` queda a cargo del equipo del proyecto. Cuando se incorpore, se documentará aquí el comando exacto para ejecutarlo. El archivo debe ser la vía de instalación limpia para el equipo receptor; hasta entonces, Alembic es el procedimiento disponible para crear el esquema.
 
 ### Inicializar el esquema con Alembic (procedimiento disponible actualmente)
 
@@ -146,35 +146,82 @@ alembic upgrade head
 
 Las migraciones crean y actualizan el esquema. No ejecutes este procedimiento sobre una base de datos que contenga información importante sin realizar antes un respaldo.
 
-## 6. Variables de entorno
+## 6. Configurar las variables de entorno y credenciales externas
 
-La plantilla se encuentra en `backend/.env.example`. Configura, como mínimo:
+El proyecto necesita credenciales propias para PostgreSQL y, según las funcionalidades que se quieran probar, para Resend, Stripe y Google OAuth. El equipo receptor debe configurar sus propias credenciales de desarrollo/prueba; no debe esperar que el repositorio incluya claves funcionales.
 
-| Variable | Propósito |
+### 6.1 Backend
+
+Desde la carpeta `backend/`, copia la plantilla:
+
+```bash
+cp .env.example .env
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Abre `backend/.env` y reemplaza los valores de ejemplo:
+
+| Variable | Qué debe configurar el equipo receptor |
 | --- | --- |
-| `DDL_DB_USER` | Usuario PostgreSQL para migraciones |
-| `DDL_USER_PASSWORD` | Contraseña del usuario DDL |
-| `DML_DB_USER` | Usuario PostgreSQL de la aplicación |
-| `DML_USER_PASSWORD` | Contraseña del usuario DML |
-| `DB_HOST` | Host de PostgreSQL |
-| `DB_PORT` | Puerto PostgreSQL, normalmente `5432` |
-| `DB_NAME` | Nombre de la base de datos |
-| `JWT_SECRET_KEY` | Secreto privado para firmar los JWT |
-| `JWT_ALGORITHM` | Algoritmo de firma configurado |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del token de acceso |
-| `STRIPE_API_KEY` | Clave secreta de Stripe para pruebas |
-| `RESEND_API_KEY` | Clave de Resend para correos |
-| `GOOGLE_CLIENT_ID` | Client ID OAuth usado por el backend |
+| `DDL_DB_USER` | Usuario PostgreSQL con permisos para crear y modificar tablas mediante Alembic. |
+| `DDL_USER_PASSWORD` | Contraseña de ese usuario DDL. |
+| `DML_DB_USER` | Usuario PostgreSQL que utilizará la aplicación en tiempo de ejecución. |
+| `DML_USER_PASSWORD` | Contraseña de ese usuario DML. |
+| `DB_HOST` | Host donde se ejecuta PostgreSQL; normalmente `localhost` si es local. |
+| `DB_PORT` | Puerto PostgreSQL; normalmente `5432`. |
+| `DB_NAME` | Nombre de la base de datos creada para el proyecto. |
+| `JWT_SECRET_KEY` | Secreto aleatorio y privado para firmar los JWT. Genera uno nuevo para el entorno local; no reutilices el ejemplo. |
+| `JWT_ALGORITHM` | Algoritmo de firma esperado por el backend; la plantilla usa `HS256`. |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Tiempo de expiración del token de acceso; la plantilla usa `30`. |
+| `RESEND_API_KEY` | API key de una cuenta de [Resend](https://resend.com/) para probar el envío de correos, como los códigos de recuperación y notificaciones habilitadas. |
+| `STRIPE_API_KEY` | Clave secreta de una cuenta de [Stripe](https://stripe.com/) en modo de prueba. Permanece únicamente en el backend. |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID de un cliente web creado en [Google Cloud Console](https://console.cloud.google.com/). Configura los orígenes JavaScript autorizados para el frontend local. |
 
-El frontend dispone de su propia plantilla en `frontend/.env.example`:
+**Resend:** crea u obtén una API key en tu cuenta de Resend y colócala en `RESEND_API_KEY`. Si el proveedor exige un dominio remitente verificado, configura ese dominio y revisa el remitente que utiliza la aplicación. Sin una clave válida y la configuración de remitente requerida, las funciones de correo no podrán probarse correctamente.
 
-- `VITE_API_BASE_URL`: base de la API.
-- `VITE_BACKEND_TARGET`: destino del proxy de desarrollo de Vite.
-- `VITE_GOOGLE_CLIENT_ID`: Client ID de Google Identity Services.
-- `VITE_STRIPE_PUBLISHABLE_KEY`: clave publicable de Stripe, si se habilita el pago con tarjeta.
+**Stripe:** utiliza las claves de prueba del entorno de desarrolladores de Stripe. La clave secreta va en `STRIPE_API_KEY` y nunca debe exponerse en el navegador, en el repositorio ni en capturas compartidas. No uses claves de producción para las pruebas cruzadas.
 
-No publiques archivos `.env`, claves privadas, contraseñas ni tokens. Los valores de `.env.example` son marcadores de posición, no credenciales funcionales. Para Google, el Client ID del frontend debe corresponder al configurado en el backend. Para Stripe, utiliza claves de prueba.
+**Google OAuth:** crea un OAuth Client ID de tipo aplicación web. Registra como origen autorizado la dirección donde se ejecuta el frontend, normalmente `http://localhost:5173`. El valor de `GOOGLE_CLIENT_ID` debe coincidir con el Client ID configurado en el frontend.
 
+### 6.2 Frontend
+
+Desde `frontend/`, copia la plantilla:
+
+```bash
+cp .env.example .env
+```
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Configura estas variables en `frontend/.env`:
+
+| Variable | Qué debe configurar el equipo receptor |
+| --- | --- |
+| `VITE_API_BASE_URL` | Mantén `/backend` para usar el proxy de Vite en desarrollo, salvo que configures otra URL. |
+| `VITE_BACKEND_TARGET` | URL donde escucha FastAPI; normalmente `http://127.0.0.1:8000`. |
+| `VITE_GOOGLE_CLIENT_ID` | El mismo OAuth Client ID configurado en `GOOGLE_CLIENT_ID` del backend. |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Clave publicable de Stripe en modo de prueba. Esta sí puede estar en el frontend; nunca pongas aquí la clave secreta. |
+
+### 6.3 Comprobación antes de ejecutar
+
+1. Comprueba que PostgreSQL está iniciado y que el host, puerto y nombre de base de datos son correctos.
+2. Comprueba que las credenciales DDL y DML corresponden a usuarios existentes y con los permisos requeridos.
+3. Comprueba que `JWT_SECRET_KEY` ya no contiene el marcador de ejemplo.
+4. Comprueba que `RESEND_API_KEY` y `STRIPE_API_KEY` son claves de prueba válidas si vas a probar correo y pagos.
+5. Comprueba que `GOOGLE_CLIENT_ID` y `VITE_GOOGLE_CLIENT_ID` contienen exactamente el mismo Client ID.
+6. No subas ninguno de los archivos `.env` a Git. Comparte las credenciales de prueba por un canal seguro y revócalas al terminar si fueron creadas solo para la actividad.
+
+Los archivos `.env.example` contienen nombres y marcadores de posición, no credenciales operativas. El repositorio no debe contener secretos reales.
+ 
 ## 7. Ejecutar el backend
 
 Desde `backend/`, con el entorno virtual activo y PostgreSQL disponible:
@@ -239,9 +286,9 @@ El backend reconoce los siguientes roles:
 | `packaging_manager` | Consultar pedidos pendientes y confirmar el empaque |
 | `courier` | Consultar pedidos asignados y actualizar su estado de entrega |
 
-El equipo del proyecto incorporará usuarios semilla para probar cada rol. En `create_db.sql`, las contraseñas se almacenarán como hashes compatibles con el mecanismo de autenticación del sistema. Para facilitar las pruebas manuales, las contraseñas correspondientes también se documentarán en texto plano mediante comentarios SQL junto a cada cuenta.
+Los únicos datos semilla serán usuarios en la tabla `users`: una cuenta para cada rol (`customer`, `store_manager`, `warehouse_manager`, `packaging_manager` y `courier`). No habrá datos semilla en las tablas de productos, secciones, inventario, carritos, pedidos, pagos ni entregas. Las contraseñas se guardarán en `users` como hashes generados con el mismo algoritmo que utiliza el backend. Para las pruebas manuales, cada contraseña en texto plano se indicará como comentario SQL junto a la cuenta correspondiente. Estas credenciales son exclusivamente para el entorno local de pruebas.
 
-Las credenciales de prueba definitivas serán las que documente el equipo en `create_db.sql`. Hasta que se incorpore el script, no se deben asumir credenciales semilla: el registro público crea usuarios con el rol `customer`. No asignes roles privilegiados desde el frontend.
+Las credenciales de prueba definitivas serán las que aparezcan comentadas en `create_db.sql`. El compañero que reciba el proyecto deberá usar esas credenciales para iniciar sesión con cada rol y verificar que cada interfaz y sus permisos correspondan al rol autenticado. Como no se insertan productos ni otros datos de negocio, deberá crear los registros necesarios durante las pruebas mediante las interfaces disponibles o los endpoints autorizados. El registro público crea usuarios con el rol `customer`; no permite elegir roles privilegiados.
 
 ## 10. Funcionalidades y endpoints principales
 
@@ -319,19 +366,8 @@ Antes de entregar, el equipo que recibe el proyecto debe poder comprobar:
 - [ ] Ejecutar los flujos funcionales y contrastarlos con los criterios de aceptación del Excel.
 - [ ] Ejecutar las pruebas automatizadas.
 
-Cada requisito funcional y no funcional debe tener un criterio de aceptación verificable y un método de comprobación documentado en el formato Excel de requisitos.
 
-## 13. Entregables académicos
-
-La entrega final del proyecto debe reunir:
-
-1. **Formato Excel completo:** hojas Proyecto, Interesados, Requisitos funcionales, Requisitos no funcionales, Historias de usuario, Casos de uso y Mockups, actualizadas y coherentes con lo implementado.
-2. **Programa implementado:** código fuente del repositorio o ZIP, este README con instrucciones de instalación y ejecución, y usuarios de prueba. Si se realiza un despliegue, se añadirá aquí la URL pública.
-3. **Arquitectura y ambiente:** diagrama de componentes y capas, tecnologías y versiones, dependencias, variables de entorno y script SQL de creación de base de datos y datos de prueba (`create_db.sql`).
-
-**URL de despliegue:** no se ha definido una URL pública para esta revisión. La aplicación se ejecuta localmente siguiendo los pasos anteriores.
-
-## 14. Consideraciones de seguridad y limitaciones
+## 13. Consideraciones de seguridad y limitaciones
 
 - Nunca envíes al backend el número completo de tarjeta ni el CVV. El flujo de tarjeta debe utilizar Stripe.js/Elements en el navegador y enviar un `payment_method_id`; la clave secreta de Stripe permanece exclusivamente en el backend.
 - Las claves y cuentas de Stripe/Resend utilizadas para pruebas no deben ser credenciales de producción.
