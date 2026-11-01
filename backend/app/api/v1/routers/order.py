@@ -206,8 +206,6 @@ async def checkout(
         customer_name=customer_name,
         total_price=payment.transaction_amount,
         delivery_status=DeliveryStatus.PENDING,
-        payment_method=data.payment_method.method,
-        payment_status=persisted_payment_status,
         shipping_street=data.shipping.street,
         shipping_neighborhood=data.shipping.neighborhood,
         shipping_department=data.shipping.department,
