@@ -1345,3 +1345,221 @@ input, button, select, textarea { font-family: var(--body); }
     font-size: 17px;
   }
 }
+
+
+/* Administration catalog palette and price editor — MK-016 / MK-017 */
+.admin-dashboard,
+.admin-catalog-shell {
+  background: #e2c7ac;
+}
+.admin-dashboard {
+  color: #211b18;
+}
+.admin-catalog-shell .admin-content {
+  background: #e2c7ac;
+}
+.admin-catalog-shell .catalog-title {
+  color: #211b18;
+}
+.admin-catalog-shell .admin-product-card {
+  background: #f0e2c6;
+}
+.admin-catalog-shell .admin-product-info h2,
+.admin-catalog-shell .admin-product-info > p {
+  color: #211b18;
+}
+.price-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 28px 18px;
+  background: rgba(32, 28, 22, .43);
+  backdrop-filter: blur(1.5px);
+}
+.price-modal {
+  width: min(100%, 700px);
+  overflow: hidden;
+  border: 1px solid rgba(75, 68, 48, .18);
+  border-radius: 22px;
+  background: #f6eedc;
+  box-shadow: 0 22px 60px rgba(39, 30, 20, .28);
+}
+.price-modal-header {
+  display: flex;
+  min-height: 67px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  color: #fffdf1;
+  background: #4f5434;
+}
+.price-modal-header h2 {
+  margin: 0;
+  font: 500 30px/1.15 var(--body);
+  text-align: center;
+}
+.price-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 22px 24px 24px;
+  color: #211b18;
+}
+.price-modal-content h3 {
+  margin: 0;
+  color: #211b18;
+  font: 400 clamp(25px, 3vw, 36px)/1.2 var(--display);
+}
+.price-modal-content h3 strong {
+  font-weight: 700;
+}
+.price-modal-product {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  gap: 15px;
+}
+.price-modal-product img,
+.price-modal-image-placeholder {
+  width: 116px;
+  height: 96px;
+  flex: 0 0 116px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.price-modal-image-placeholder {
+  display: grid;
+  place-items: center;
+  color: #77775a;
+  background: #e7ddc9;
+  font-size: 36px;
+}
+.price-modal-product p {
+  margin: 3px 0;
+  color: #211b18;
+  font: 400 21px/1.25 var(--body);
+}
+.price-modal-product .price-modal-product-name {
+  font-size: 26px;
+  font-weight: 500;
+}
+.price-modal-current {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #29251e;
+  background: #e9deca;
+  font: 400 22px/1.25 var(--body);
+}
+.price-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.price-modal-field input {
+  width: 100%;
+  min-height: 62px;
+  padding: 8px 17px;
+  border: 2px solid #77775a;
+  border-radius: 12px;
+  color: #211b18;
+  background: #fffefa;
+  font: 400 27px/1.2 var(--body);
+}
+.price-modal-field input:focus {
+  outline: 3px solid rgba(79, 84, 52, .2);
+  outline-offset: 2px;
+}
+.price-modal-field span {
+  color: #514b3e;
+  font: 400 17px/1.35 var(--body);
+}
+.price-modal-content .admin-notice {
+  margin: 0;
+}
+.price-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 11px;
+  margin-top: 8px;
+}
+.price-modal-actions button {
+  min-height: 54px;
+  padding: 10px 19px;
+  border: 0;
+  border-radius: 11px;
+  cursor: pointer;
+  font: 400 19px/1.15 var(--body);
+}
+.price-modal-confirm {
+  color: #fffdf1;
+  background: #24965a;
+}
+.price-modal-confirm:hover:not(:disabled) {
+  background: #197b49;
+}
+.price-modal-cancel {
+  color: #fff;
+  background: #777b82;
+}
+.price-modal-cancel:hover:not(:disabled) {
+  background: #62666d;
+}
+.price-modal-actions button:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+@media (max-width: 600px) {
+  .price-modal-backdrop {
+    align-items: center;
+    padding: 14px;
+  }
+  .price-modal {
+    border-radius: 16px;
+  }
+  .price-modal-header {
+    min-height: 58px;
+  }
+  .price-modal-header h2 {
+    font-size: 25px;
+  }
+  .price-modal-content {
+    gap: 11px;
+    padding: 18px 16px 19px;
+  }
+  .price-modal-content h3 {
+    font-size: 25px;
+  }
+  .price-modal-product img,
+  .price-modal-image-placeholder {
+    width: 88px;
+    height: 80px;
+    flex-basis: 88px;
+  }
+  .price-modal-product p {
+    font-size: 17px;
+  }
+  .price-modal-product .price-modal-product-name {
+    font-size: 22px;
+  }
+  .price-modal-current {
+    font-size: 18px;
+  }
+  .price-modal-field input {
+    min-height: 54px;
+    font-size: 23px;
+  }
+  .price-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .price-modal-actions button {
+    width: 100%;
+    min-height: 48px;
+    font-size: 17px;
+  }
+}
