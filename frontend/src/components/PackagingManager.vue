@@ -34,18 +34,18 @@ onMounted(loadOrders)
 <template>
   <main class="operations-shell">
     <header class="operations-header">
-      <a class="customer-brand" href="#" @click.prevent="loadOrders"><span class="customer-brand-mark">♧</span><span><strong>Canasta Express</strong><small>Legumbrería &amp; Verdulería Online</small></span></a>
+      <a class="customer-brand" href="#" @click.prevent="loadOrders"><span class="customer-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20V9m0 0c-4.4 0-6.5-2.2-6.5-6 4.3 0 6.5 2.1 6.5 6Zm0 2c0-4.2 2.1-6.2 6.5-6.2 0 4.1-2.1 6.2-6.5 6.2Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>Canasta Express</strong><small>Legumbrería &amp; Verdulería Online</small></span></a>
       <div class="operations-user"><span>Hola, {{ displayName }}</span><button @click="emit('logout')">Salir</button></div>
     </header>
     <section class="operations-page">
-      <div class="operations-title-row"><div><p class="operations-kicker">OPERACIONES · EMPAQUE</p><h1>Gestión de pedidos</h1><p>Consulta los pedidos pendientes y prepara los productos para su despacho.</p></div><button class="operations-refresh" @click="loadOrders">↻ Actualizar</button></div>
+      <div class="operations-title-row"><div><p class="operations-kicker">OPERACIONES · EMPAQUE</p><h1>Gestión de pedidos</h1><p>Consulta los pedidos pendientes y prepara los productos para su despacho.</p></div><button class="operations-refresh" @click="loadOrders"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4.8 10a7.5 7.5 0 0 1 12.8-3L20 12M4 17v-5h5m10.2 2a7.5 7.5 0 0 1-12.8 3L4 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Actualizar</button></div>
       <div class="operations-tabs"><button :class="{active: !returned}" @click="returned=false; loadOrders()">Pedidos pendientes</button><button :class="{active: returned}" @click="returned=true; loadOrders()">Devueltos a bodega</button></div>
       <p v-if="error" class="operations-alert error">{{ error }}</p><p v-if="success" class="operations-alert success">{{ success }}</p>
       <div v-if="loading" class="operations-empty">Cargando pedidos…</div>
       <div v-else-if="orders.length" class="operations-order-layout">
         <div class="operations-list">
           <button v-for="order in orders" :key="order.id" class="operations-order-row" :class="{selected: selected?.id===order.id}" @click="selected=order">
-            <span class="operations-order-icon">▣</span><span class="operations-order-main"><strong>Pedido #{{ order.id }}</strong><small>{{ order.customer_name }} · {{ dateLabel(order.created_at) }}</small><small>{{ itemCount(order) }} unidades · {{ order.items.length }} productos</small></span><strong>{{ money(order.total_price) }}</strong>
+            <span class="operations-order-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4.5h14v15H5zM8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="operations-order-main"><strong>Pedido #{{ order.id }}</strong><small>{{ order.customer_name }} · {{ dateLabel(order.created_at) }}</small><small>{{ itemCount(order) }} unidades · {{ order.items.length }} productos</small></span><strong>{{ money(order.total_price) }}</strong>
           </button>
         </div>
         <aside v-if="selected" class="operations-detail">
