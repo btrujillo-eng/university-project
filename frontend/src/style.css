@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&display=swap');
 
 :root {
   font-family: 'Oswald', Arial, sans-serif;
@@ -763,5 +763,123 @@ input, button, select, textarea { font-family: var(--body); }
   .cart-summary {
     width: min(100%, 340px);
     padding-inline: 2px;
+  }
+}
+
+
+/* Customer cart typography and palette — aligned with MK-007 */
+.customer-app {
+  color: #173f2b;
+  background: #fff7e8;
+}
+.customer-header {
+  color: #173f2b;
+  background: #fff8e9;
+  box-shadow: 0 4px 16px rgba(32, 68, 43, .10);
+}
+.customer-account {
+  color: #173f2b;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 500;
+}
+.customer-search input {
+  color: #173f2b;
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+.customer-page-title {
+  color: #17472e;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+.customer-back-row button {
+  color: #17472e;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 600;
+}
+.cart-layout,
+.cart-items,
+.cart-item,
+.cart-item-name,
+.cart-summary {
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+.cart-item {
+  color: #173f2b;
+  border-bottom-color: #d8dfd3;
+}
+.cart-item-name strong {
+  color: #17472e;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+.cart-item-name small {
+  color: #617665;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 12px;
+}
+.cart-item > span:not(.cart-placeholder) {
+  color: #244d36;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 500;
+}
+.cart-item > strong {
+  color: #173f2b;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+}
+.cart-item > input[type="checkbox"] {
+  accent-color: #1f713f;
+}
+.remove-cart-item {
+  color: #b64a32;
+}
+.remove-cart-item:hover:not(:disabled) {
+  color: #963a28;
+  background: #f8e5dc;
+}
+.cart-summary {
+  color: #173f2b;
+}
+.cart-summary p {
+  color: #173f2b;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+.cart-summary p strong {
+  color: #123d27;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-size: 21px;
+  font-weight: 800;
+}
+.cart-summary small {
+  color: #657768;
+  font-family: 'Montserrat', Arial, sans-serif;
+}
+.cart-summary .minimum-warning {
+  color: #ad392b !important;
+}
+.customer-primary-button {
+  border-color: #176b39;
+  color: #fff;
+  background: #19733d;
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 700;
+}
+.customer-primary-button:hover:not(:disabled) {
+  background: #145b31;
+}
+.cart-summary .customer-primary-button {
+  font-size: 16px;
+}
+@media (max-width: 650px) {
+  .cart-item-name strong {
+    font-size: 15px;
+  }
+  .cart-item > strong {
+    font-size: 12px;
   }
 }
