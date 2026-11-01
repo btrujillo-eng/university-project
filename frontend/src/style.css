@@ -1348,6 +1348,7 @@ input, button, select, textarea { font-family: var(--body); }
 
 
 /* Administration catalog palette and price editor — MK-016 / MK-017 */
+.admin-shell,
 .admin-dashboard,
 .admin-catalog-shell {
   background: #e2c7ac;
