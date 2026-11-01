@@ -5,9 +5,8 @@ from decimal import Decimal
 @dataclass(frozen=True, slots=True)
 class OrderData:
     user_id: int
+    payment_id: int
     total_price: Decimal
-    payment_method: str
-    payment_status: str
     shipping_street: str
     shipping_details: str
     shipping_city: str
