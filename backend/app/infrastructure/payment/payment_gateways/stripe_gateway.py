@@ -41,8 +41,10 @@ class StripeGateway(IPaymentGateway):
             # Retrieve card metadata before charging, so a metadata lookup failure
             # cannot happen after a successful charge and before order persistence.
             method = await asyncio.to_thread(stripe.PaymentMethod.retrieve, payment_method_id)
-            card = method.get("card") or {}
-            if not card.get("last4") or not card.get("brand"):
+            # Stripe returns a StripeObject, which supports item access but
+            # does not implement the standard dict.get() method.
+            card = method["card"] if method and "card" in method else None
+            if not card or not card["last4"] or not card["brand"]:
                 raise ValueError("The Stripe PaymentMethod is not a card")
             card_brand = str(card["brand"]).title()
             last_digits = str(card["last4"])
