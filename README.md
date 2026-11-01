@@ -2,7 +2,7 @@
 
 Aplicación web de comercio electrónico para una legumbrería y verdulería. El sistema permite consultar el catálogo, administrar productos, gestionar el carrito y los pedidos, realizar checkout y operar las entregas según el rol del usuario.
 
-> **Estado de la entrega:** este README documenta la estructura y los pasos de instalación del proyecto. El script de inicialización `create_db.sql` y los usuarios semilla de pruebas se incorporarán como parte del paquete final; hasta que esos archivos estén en el repositorio, la creación del esquema se realiza mediante Alembic.
+> **Estado de la entrega:** este README documenta la estructura y los pasos de instalación del proyecto. El equipo del proyecto preparará `create_db.sql` y los datos semilla para las pruebas manuales. Cuando esos archivos estén incorporados, se actualizarán estas instrucciones con el procedimiento exacto de ejecución. Mientras tanto, el esquema puede inicializarse mediante Alembic.
 
 ## 1. Tecnologías
 
@@ -83,7 +83,7 @@ Los nombres y contraseñas deben coincidir con las variables configuradas en `ba
 
 ### Script de inicialización previsto: `create_db.sql`
 
-Para facilitar la instalación por parte de otro equipo, la entrega final incluirá un archivo `create_db.sql` que permitirá crear la base de datos y todas sus tablas, además de insertar los datos iniciales necesarios para las pruebas manuales.
+El equipo del proyecto incorporará un archivo `create_db.sql` como parte de la entrega. Este script estará destinado a crear la base de datos y todas sus tablas, además de insertar los datos iniciales necesarios para las pruebas manuales.
 
 El script incluirá cuentas de prueba para los distintos roles del sistema:
 
@@ -95,7 +95,7 @@ El script incluirá cuentas de prueba para los distintos roles del sistema:
 
 Las contraseñas de esas cuentas se almacenarán en la base de datos únicamente como hashes compatibles con el mecanismo de autenticación de la aplicación. Para facilitar las pruebas manuales, el propio script documentará cada contraseña en texto plano mediante comentarios SQL junto al usuario correspondiente. Esas credenciales serán exclusivas del entorno de pruebas y no deben reutilizarse en producción.
 
-**Importante:** `create_db.sql` está previsto para la entrega final y todavía no forma parte del repositorio en esta revisión. Mientras se incorpora, utiliza el procedimiento de migraciones descrito a continuación. No intentes ejecutar el comando de `create_db.sql` hasta que el archivo esté disponible.
+**Importante:** la preparación de `create_db.sql` y de sus datos semilla queda a cargo del equipo del proyecto. Cuando el archivo se incorpore, se debe documentar aquí su comando de ejecución exacto. Hasta entonces, utiliza el procedimiento de migraciones descrito a continuación.
 
 ### Inicializar el esquema con Alembic (procedimiento disponible actualmente)
 
@@ -239,9 +239,9 @@ El backend reconoce los siguientes roles:
 | `packaging_manager` | Consultar pedidos pendientes y confirmar el empaque |
 | `courier` | Consultar pedidos asignados y actualizar su estado de entrega |
 
-La entrega final incluirá usuarios semilla para probar cada rol. El archivo `create_db.sql` contendrá los hashes de contraseña que necesita el sistema y, como comentarios SQL destinados exclusivamente a pruebas manuales, las contraseñas en texto plano asociadas a cada cuenta.
+El equipo del proyecto incorporará usuarios semilla para probar cada rol. En `create_db.sql`, las contraseñas se almacenarán como hashes compatibles con el mecanismo de autenticación del sistema. Para facilitar las pruebas manuales, las contraseñas correspondientes también se documentarán en texto plano mediante comentarios SQL junto a cada cuenta.
 
-**No se deben inventar ni asumir credenciales antes de incorporar el script.** Hasta ese momento, registra usuarios mediante el endpoint de registro (que asigna el rol `customer`) o prepara cuentas de prueba mediante un procedimiento administrativo controlado. No asignes roles privilegiados desde el frontend.
+Las credenciales de prueba definitivas serán las que documente el equipo en `create_db.sql`. Hasta que se incorpore el script, no se deben asumir credenciales semilla: el registro público crea usuarios con el rol `customer`. No asignes roles privilegiados desde el frontend.
 
 ## 10. Funcionalidades y endpoints principales
 
