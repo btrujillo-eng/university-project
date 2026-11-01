@@ -1,7 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
-from types import SimpleNamespace
 
 from app.api.schemas.payment import PaymentDataRequest
 from app.api.schemas.user import ContactInfoRequest, UserDataRequest
@@ -48,6 +47,10 @@ def test_stripe_gateway_passes_stable_idempotency_key(monkeypatch):
     assert payment_method_calls == ["pm_card_visa"]
     assert intent_calls[0]["idempotency_key"] == "checkout-7-unique-client-key-123"
     assert intent_calls[0]["amount"] == 2500000
+    assert intent_calls[0]["automatic_payment_methods"] == {
+        "enabled": True,
+        "allow_redirects": "never",
+    }
 
 
 def test_payment_data_accepts_optional_internal_idempotency_key():
