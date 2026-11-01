@@ -29,4 +29,4 @@ class Payment(Base):
         DateTime(timezone=True), server_default=func.current_timestamp(), onupdate=func.now()
     )
     
-    order: Mapped[Order] = relationship(back_populates="payment")
+    order: Mapped[Order | None] = relationship(\n        back_populates="payment",\n        foreign_keys="Order.payment_id",\n        uselist=False,\n    )
