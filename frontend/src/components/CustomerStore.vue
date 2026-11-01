@@ -391,7 +391,9 @@ onBeforeUnmount(() => {
             <div class="cart-item-name"><strong>{{ item.product_name }}</strong><small>{{ unitLabel(item.unit_of_measure) }}</small></div>
             <span>{{ quantity(item.quantity) }} {{ unitLabel(item.unit_of_measure) }}</span>
             <strong>{{ money(item.line_total) }}</strong>
-            <button type="button" class="remove-cart-item" :disabled="busy" :aria-label="`Eliminar ${item.product_name}`" @click="deleteCartItem(item.product_id)">×</button>
+            <button type="button" class="remove-cart-item" :disabled="busy" :aria-label="`Eliminar ${item.product_name} del carrito`" :title="`Eliminar ${item.product_name}`" @click="deleteCartItem(item.product_id)">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </article>
         </div>
         <aside class="cart-summary">
