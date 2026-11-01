@@ -549,6 +549,7 @@ onBeforeUnmount(() => {
           <p>Total: <strong>{{ money(selectedQuantityTotal) }}</strong></p>
         </div>
         <button type="submit" class="customer-primary-button quantity-add-button" :disabled="busy || !Number.isFinite(Number(quantityDraft)) || Number(quantityDraft) <= 0 || Number(quantityDraft) > Number(selectedProduct.stock)">{{ busy ? 'Agregando…' : 'Agregar al carrito' }}</button>
+        <button type="button" class="quantity-cancel-button" :disabled="busy" @click="closeQuantityDialog">Cancelar</button>
       </form>
     </div>
   </main>
