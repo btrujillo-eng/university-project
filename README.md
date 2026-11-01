@@ -126,7 +126,10 @@ INSERT INTO users (
 );
 ```
 
-El comentario solo documenta qué contraseña debe escribir el probador al iniciar sesión; la aplicación compara la contraseña ingresada contra el hash almacenado. El hash de ejemplo es ilustrativo: al preparar el script real, genera cada hash a partir de su contraseña correspondiente usando el mismo hasher del backend. No copies un hash de ejemplo para todas las cuentas ni almacenes contraseñas en texto plano en las columnas de la base de datos.
+### IMPORTANTE:
+Los hashes incluidos en el archivo create_db.sql serán reales y válidos para iniciar sesión. Cada uno se generará a partir de la contraseña correspondiente utilizando el mismo algoritmo, hasher y configuración que emplea el backend. Por tanto, cada contraseña indicada en los comentarios SQL corresponderá exactamente al hash almacenado para ese usuario.
+
+La contraseña en texto plano aparecerá únicamente como comentario para facilitar las pruebas; nunca se insertará como valor en la base de datos.
 
 ### Credenciales de servicios externos para el equipo receptor
 
