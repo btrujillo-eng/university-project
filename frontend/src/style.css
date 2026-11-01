@@ -531,3 +531,38 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,107,67,.
   .customer-product-grid { grid-template-columns: 1fr; }
   .customer-page-title { font-size: 29px; }
 }
+
+
+/* Product quantity dialog — MK-006 */
+.quantity-dialog-backdrop { place-items:center start; padding:24px clamp(20px,12vw,220px); background:rgba(36,35,27,.58); }
+.quantity-dialog { width:min(100%,376px); gap:0; overflow:visible; padding:0 0 22px; border:1px solid rgba(91,75,51,.2); border-radius:20px; background:#f2dfc5; box-shadow:0 18px 48px rgba(36,29,19,.28); }
+.quantity-dialog .modal-close { top:12px; right:12px; width:34px; height:34px; color:#fff; background:#626346; font:600 22px var(--body); }
+.quantity-dialog-heading { padding:25px 42px 21px; border-radius:19px 19px 0 0; background:#f0dfc7; text-align:center; }
+.quantity-dialog-heading h2 { margin:0; color:#3d2718; font:600 25px/1.18 var(--display); }
+.quantity-product-summary { position:relative; display:grid; grid-template-columns:112px minmax(0,1fr); align-items:center; gap:12px; min-height:158px; margin:0 0 0; padding:18px 18px 18px 16px; border-radius:0 18px 18px 0; background:#fff; box-shadow:0 5px 14px rgba(55,43,29,.1); }
+.quantity-product-summary > img { width:112px; height:112px; border-radius:50%; object-fit:cover; }
+.quantity-product-details h3 { margin:0 0 5px; font:600 25px/1.1 var(--display); }
+.quantity-product-details p { margin:0 0 5px; color:#29251d; font:500 18px var(--display); }
+.quantity-product-details small { color:#655d50; font-size:13px; }
+.quantity-control-section { padding:17px 22px 5px; background:#fff; }
+.quantity-stepper { display:flex; align-items:center; justify-content:center; gap:13px; }
+.quantity-stepper button { display:grid; width:44px; height:44px; place-items:center; border:0; border-radius:12px; color:#5c5b48; background:#d7cfc4; cursor:pointer; font:500 29px/1 var(--body); }
+.quantity-stepper button:disabled { opacity:.4; cursor:not-allowed; }
+.quantity-stepper output { min-width:115px; color:#151515; text-align:center; font:500 28px var(--body); }
+.quantity-manual-entry { display:flex; align-items:center; justify-content:center; gap:10px; margin-top:12px; color:#766b5a; font-size:12px; }
+.quantity-manual-entry input { width:92px; min-height:34px; padding:5px 8px; border:1px solid #c9beaa; border-radius:7px; background:#fffdf8; font:14px var(--body); }
+.quantity-price-summary { display:flex; flex-direction:column; gap:7px; padding:14px 22px 12px; color:#40382c; background:#f2dfc5; font-size:14px; }
+.quantity-price-summary p { display:flex; justify-content:space-between; margin:0; font-size:17px; }
+.quantity-price-summary strong { color:#242118; }
+.quantity-add-button { width:calc(100% - 44px); min-height:49px; margin:0 22px; border-radius:10px; background:#77775a; font-size:17px; }
+.quantity-add-button:hover { background:#626346; }
+@media(max-width:600px) {
+  .quantity-dialog-backdrop { place-items:center; padding:14px; }
+  .quantity-dialog { width:min(100%,390px); }
+  .quantity-dialog-heading { padding:24px 40px 19px; }
+  .quantity-dialog-heading h2 { font-size:22px; }
+  .quantity-product-summary { grid-template-columns:94px minmax(0,1fr); min-height:132px; padding:13px; }
+  .quantity-product-summary > img { width:94px; height:94px; }
+  .quantity-product-details h3 { font-size:22px; }
+  .quantity-stepper output { font-size:23px; }
+}
