@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
       <div v-if="cart.items.length" class="cart-layout">
         <div class="cart-items">
           <article v-for="item in cart.items" :key="item.product_id" class="cart-item">
-            <input type="checkbox" checked disabled :aria-label="`Incluir ${item.product_name} en el pedido`" />
+            <input type="checkbox" disabled :aria-label="`La selección individual de ${item.product_name} no está disponible`" />
             <img v-if="item.image_path" :src="imageUrl(item.image_path)" :alt="item.product_name" />
             <span v-else class="cart-placeholder">♧</span>
             <div class="cart-item-name"><strong>{{ item.product_name }}</strong><small>{{ unitLabel(item.unit_of_measure) }}</small></div>
@@ -398,7 +398,6 @@ onBeforeUnmount(() => {
         </div>
         <aside class="cart-summary">
           <p>Total del pedido <strong>{{ formattedTotal }}</strong></p>
-          <small>Envío a domicilio: Gratis</small>
           <small v-if="!canCheckout" class="minimum-warning">Pedido mínimo: {{ money(minimumOrder) }}</small>
           <button type="button" class="customer-primary-button" :disabled="!canCheckout" @click="goToDelivery">Finalizar Compra</button>
         </aside>
