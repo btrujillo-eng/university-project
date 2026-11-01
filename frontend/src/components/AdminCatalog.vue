@@ -198,19 +198,6 @@ onUnmounted(() => {
 
 <template>
   <main class="admin-shell">
-    <header class="admin-topbar">
-      <a class="admin-brand" href="#" @click.prevent="returnToCatalog" aria-label="Canasta Express, catálogo">
-        <span class="admin-brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20V9m0 0c-4.4 0-6.5-2.2-6.5-6 4.3 0 6.5 2.1 6.5 6Zm0 2c0-4.2 2.1-6.2 6.5-6.2 0 4.1-2.1 6.2-6.5 6.2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
-        <span class="admin-brand-copy"><strong>Canasta Express</strong><small>Legumbrería &amp; Verdulería Online</small></span>
-      </a>
-      <div class="admin-user">
-        <span>Hola, {{ userDisplayName }}</span>
-        <button type="button" class="admin-menu-button" aria-label="Cerrar sesión" @click="emit('logout')">Salir <span aria-hidden="true">⌄</span></button>
-      </div>
-    </header>
-
     <section v-if="screen === 'catalog'" class="admin-content">
       <div class="catalog-toolbar">
         <form class="catalog-search" @submit.prevent="loadProducts">
