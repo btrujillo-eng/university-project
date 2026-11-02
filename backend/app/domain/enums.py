@@ -12,9 +12,9 @@ class PaymentMethods(str, Enum):
     CASH = "cash"
 
 class PaymentStatus(str, Enum):
-    SUCCEDED = "succeeded"
-    FAILED = "failed"
+    CANCELED = "canceled"
     PENDING = "pending"
+    SUCCEEDED = "succeeded"
     
 class TypeCurrency(str, Enum):
     USD = "usd"
