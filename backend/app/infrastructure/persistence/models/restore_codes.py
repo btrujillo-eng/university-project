@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Identity, Integer, String, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Identity, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.persistence.models.base import Base
@@ -13,6 +13,14 @@ if TYPE_CHECKING:
 
 class RestoreCode(Base):
     __tablename__ = 'restore_codes'
+    __table_args__ = (
+        Index(
+            "uq_restore_codes_one_active_per_user",
+            "user_id",
+            unique=True,
+            postgresql_where=text("is_active = true"),
+        ),
+    )
     
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
