@@ -29,25 +29,24 @@ DROP TYPE IF EXISTS unit_of_measure CASCADE;
 DROP TYPE IF EXISTS payment_status CASCADE;
 DROP TYPE IF EXISTS payment_methods CASCADE;
 DROP TYPE IF EXISTS delivery_status CASCADE;
--- Tipo legado no utilizado por los modelos actuales (ProductSection es una tabla).
 DROP TYPE IF EXISTS product_section CASCADE;
 
 
 -- 2. TIPOS ENUM
 -- ----------------------------------------------------------------------------
 CREATE TYPE user_role AS ENUM (
-    'customer',
     'store_manager',
-    'warehouse_manager',
+    'customer',
     'packaging_manager',
+    'warehouse_manager',
     'courier'
 );
 
 CREATE TYPE unit_of_measure AS ENUM (
     'kilogram',
     'gram',
-    'unit',
-    'pound'
+    'pound',
+    'unit'
 );
 
 CREATE TYPE payment_status AS ENUM (
@@ -68,6 +67,14 @@ CREATE TYPE delivery_status AS ENUM (
     'delivered',
     'canceled',
     'returned_to_warehouse'
+);
+
+-- Tipo legado presente en la base actual, pero no utilizado por los modelos ORM.
+-- Las secciones activas del catálogo se gestionan mediante la tabla product_sections.
+CREATE TYPE product_section AS ENUM (
+    'fruit',
+    'tuber',
+    'vegetable'
 );
 
 
