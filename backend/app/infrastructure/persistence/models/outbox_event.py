@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, Identity, Integer, String, func
+from sqlalchemy import CheckConstraint, DateTime, Identity, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,6 +10,9 @@ from app.infrastructure.persistence.models.base import Base
 
 class OutboxEvent(Base):
     __tablename__ = "outbox_events"
+    __table_args__ = (
+        CheckConstraint("attempts >= 0", name="ck_outbox_events_attempts_nonnegative"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     event_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
