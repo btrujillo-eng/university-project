@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Identity, Integer, Numeric
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Identity, Integer, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -14,6 +14,11 @@ from app.infrastructure.persistence.models.products import Product
 
 class OrderItem(Base):
     __tablename__ = "order_items"
+    __table_args__ = (
+        UniqueConstraint("order_id", "product_id", name="uk_order_items_order_id_product_id"),
+        CheckConstraint("quantity > 0", name="order_items_quantity_check"),
+        CheckConstraint("unit_price > 0", name="order_items_unit_price_check"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), nullable=False)
