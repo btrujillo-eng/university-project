@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, Identity, Integer
+from sqlalchemy import DateTime, Enum, Identity, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -20,7 +20,9 @@ class Payment(Base):
 
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus, name="payment_status", values_callable=get_enum_value), nullable=False
+        Enum(PaymentStatus, name="payment_status", values_callable=get_enum_value),
+        nullable=False,
+        server_default=text("'pending'"),
     )
     method: Mapped[PaymentMethods] = mapped_column(
         # Keep this name aligned with the existing PostgreSQL enum type.
