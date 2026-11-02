@@ -12,7 +12,10 @@ from app.infrastructure.persistence.models import Order, Payment
 def test_order_and_payment_models_have_one_to_one_relationship() -> None:
     configure_mappers()
 
-    assert Order.__table__.c.payment_id.unique is True
+    assert any(
+        constraint.name == "uq_orders_payments"
+        for constraint in Order.__table__.constraints
+    )
     assert Order.__table__.c.payment_id.foreign_keys
     assert "payment" in Order.__mapper__.relationships
     assert "order" in Payment.__mapper__.relationships
@@ -52,3 +55,21 @@ def test_order_response_reads_payment_fields_from_payment_relationship() -> None
 
     assert response.payment_method == PaymentMethods.CASH
     assert response.payment_status == PaymentStatus.PENDING
+
+
+
+def test_payment_and_delivery_enums_match_existing_postgresql_values() -> None:
+    assert [status.value for status in PaymentStatus] == [
+        "canceled",
+        "pending",
+        "succeeded",
+    ]
+    assert [method.value for method in PaymentMethods] == ["card", "cash"]
+    assert [status.value for status in DeliveryStatus] == [
+        "pending",
+        "packaged",
+        "in_transit",
+        "delivered",
+        "canceled",
+        "returned_to_warehouse",
+    ]
