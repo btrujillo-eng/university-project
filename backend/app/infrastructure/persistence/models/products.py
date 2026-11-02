@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Identity, Integer, Numeric, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Identity, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -18,6 +18,10 @@ if TYPE_CHECKING:
 
 class Product(Base):
     __tablename__ = 'products'
+    __table_args__ = (
+        CheckConstraint("price > 0", name="products_price_check"),
+        CheckConstraint("stock >= 0", name="products_stock_check"),
+    )
     
     id: Mapped[int] = mapped_column(Integer, Identity(always=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(120), unique=True)
@@ -26,7 +30,7 @@ class Product(Base):
     stock: Mapped[Decimal] = mapped_column(Numeric(precision=10, scale=3))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.current_timestamp(), onupdate=func.now())
-    image_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    image_path: Mapped[str] = mapped_column(String(255), nullable=False)
     section_id: Mapped[int] = mapped_column(Integer, ForeignKey('product_sections.id'))
     
     section: Mapped[ProductSection] = relationship(back_populates='products')
