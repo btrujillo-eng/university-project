@@ -32,7 +32,7 @@ class ProcessPaymentUseCase:
 
         if (
             payment_response.payment_method.method == PaymentMethods.CARD
-            and payment_response.payment_status == PaymentStatus.SUCCEDED.value
+            and payment_response.payment_status == PaymentStatus.SUCCEEDED.value
         ):
             card_data = payment_response.payment_method
             payload = {
