@@ -7,7 +7,7 @@ const emit = defineEmits(['logout'])
 const products = ref([])
 const search = ref('')
 const drafts = ref({})
-const editingId = ref(null)
+const editingProduct = ref(null)
 const loading = ref(false)
 const busyId = ref(null)
 const error = ref('')
@@ -41,13 +41,14 @@ async function load() {
 
 function startEditing(product) {
   drafts.value[product.id] = String(product.stock)
-  editingId.value = product.id
+  editingProduct.value = product
   error.value = ''
   success.value = ''
 }
 
 function cancelEditing() {
-  editingId.value = null
+  if (busyId.value === editingProduct.value?.id) return
+  editingProduct.value = null
 }
 
 async function save(product) {
@@ -64,7 +65,7 @@ async function save(product) {
     const index = products.value.findIndex(item => item.id === product.id)
     if (index !== -1) products.value[index] = updated
     drafts.value[product.id] = String(updated.stock)
-    editingId.value = null
+    editingProduct.value = null
     success.value = `Existencias de ${updated.name} actualizadas.`
   } catch (exception) {
     error.value = exception.message || 'No fue posible actualizar las existencias.'
@@ -123,20 +124,40 @@ onMounted(load)
             <h2>{{ product.name }}</h2>
             <p class="stock-price">{{ money(product.price) }} / {{ unitLabel(product) }}</p>
             <p class="stock-available">Disponible: <strong>{{ product.stock }} {{ unitLabel(product) }}</strong></p>
-            <div v-if="editingId === product.id" class="stock-editor">
-              <label :for="`stock-${product.id}`">Nueva cantidad ({{ unitLabel(product) }})</label>
-              <input :id="`stock-${product.id}`" v-model="drafts[product.id]" type="number" min="0" max="9999999.999" step="0.001">
-              <div class="stock-editor-actions">
-                <button type="button" class="stock-save" :disabled="busyId === product.id" @click="save(product)">{{ busyId === product.id ? 'Guardando…' : 'Guardar' }}</button>
-                <button type="button" class="stock-cancel" :disabled="busyId === product.id" @click="cancelEditing">Cancelar</button>
-              </div>
-            </div>
-            <button v-else type="button" class="stock-edit-button" @click="startEditing(product)">Actualizar cantidad disponible</button>
+            <button type="button" class="stock-edit-button" @click="startEditing(product)">Actualizar cantidad disponible</button>
           </div>
         </article>
       </div>
       <p v-else class="stock-empty">No se encontraron productos.</p>
     </section>
+      <div v-if="editingProduct" class="stock-modal-backdrop" @click.self="cancelEditing" @keydown.esc="cancelEditing">
+        <section class="stock-modal" role="dialog" aria-modal="true" :aria-labelledby="'stock-modal-title'">
+          <h2 id="stock-modal-title">Actualizar Inventario: {{ editingProduct.name }}</h2>
+          <div class="stock-modal-product">
+            <div class="stock-modal-image">
+              <img v-if="imageUrl(editingProduct) && !failedImages.has(editingProduct.id)" :src="imageUrl(editingProduct)" :alt="editingProduct.name" @error="hideBrokenImage(editingProduct.id)">
+              <svg v-else viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20V9m0 0c-4.4 0-6.5-2.2-6.5-6 4.3 0 6.5 2.1 6.5 6Zm0 2c0-4.2 2.1-6.2 6.5-6.2 0 4.1-2.1 6.2-6.5 6.2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="stock-modal-product-copy">
+              <strong>{{ editingProduct.name }}</strong>
+              <span>Cantidad disponible actual: {{ editingProduct.stock }} {{ unitLabel(editingProduct) }}</span>
+            </div>
+          </div>
+          <form class="stock-modal-form" @submit.prevent="save(editingProduct)">
+            <label :for="'stock-modal-input'">Nueva cantidad ({{ unitLabel(editingProduct) }}):</label>
+            <div class="stock-modal-input-wrap">
+              <input id="stock-modal-input" v-model="drafts[editingProduct.id]" type="number" min="0" max="9999999.999" step="0.001" required autofocus>
+              <span>{{ unitLabel(editingProduct) }}</span>
+            </div>
+            <p v-if="error" class="stock-modal-error" role="alert">{{ error }}</p>
+            <div class="stock-modal-actions">
+              <button class="stock-save" type="submit" :disabled="busyId === editingProduct.id">{{ busyId === editingProduct.id ? 'Guardando…' : 'Guardar Cambios' }}</button>
+              <button class="stock-cancel" type="button" :disabled="busyId === editingProduct.id" @click="cancelEditing">Cancelar</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    
   </main>
 </template>
 
@@ -174,16 +195,29 @@ onMounted(load)
 .stock-available strong{font-weight:600}
 .stock-edit-button{width:100%;min-height:56px;margin-top:12px;padding:7px 10px;border:1px solid #53563a;border-radius:12px;background:#77795b;color:#fff8e9;font:inherit;font-size:17px;line-height:1.1;cursor:pointer}
 .stock-edit-button:hover,.stock-save:hover{background:#55583d}
-.stock-editor{width:100%;margin-top:9px;display:grid;gap:6px}
-.stock-editor label{font-size:13px}
-.stock-editor input{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #b9a17c;border-radius:8px;background:#fffaf0;font:inherit}
-.stock-editor-actions{display:flex;gap:7px}
-.stock-save,.stock-cancel{padding:7px 10px;border-radius:8px;border:1px solid #51543a;font:inherit;font-size:14px;cursor:pointer}
-.stock-save{background:#55583d;color:#fff8e9}
-.stock-cancel{background:transparent;color:#383323}
-.stock-save:disabled,.stock-cancel:disabled,.stock-refresh:disabled{opacity:.55;cursor:wait}
+.stock-modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#211a13a8;backdrop-filter:blur(2px)}
+.stock-modal{width:min(548px,100%);box-sizing:border-box;padding:25px 24px 20px;border:1px solid #d6bd94;border-radius:23px;background:#f3e2bd;box-shadow:0 18px 55px #21170f55;color:#211b16}
+.stock-modal>h2{margin:0 0 20px;text-align:center;font-family:Georgia,serif;font-size:30px;font-weight:500;line-height:1.2}
+.stock-modal-product{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.stock-modal-image{width:116px;height:96px;flex:0 0 116px;overflow:hidden;border-radius:17px;background:#e5d1ad;box-shadow:0 4px 10px #52381f24;display:grid;place-items:center}
+.stock-modal-image img{width:100%;height:100%;object-fit:cover;display:block}
+.stock-modal-image svg{width:48px;height:48px;color:#55583d}
+.stock-modal-product-copy{min-width:0;display:flex;flex-direction:column;gap:4px;font-size:21px;line-height:1.25}
+.stock-modal-product-copy strong{font-family:Georgia,serif;font-size:24px;font-weight:500}
+.stock-modal-form{display:grid;gap:8px}
+.stock-modal-form>label{font-size:21px}
+.stock-modal-input-wrap{height:50px;display:flex;align-items:center;overflow:hidden;border:2px solid #b7a17e;border-radius:9px;background:#fff}
+.stock-modal-input-wrap:focus-within{border-color:#656b45;box-shadow:0 0 0 3px #77795b30}
+.stock-modal-input-wrap input{width:100%;min-width:0;height:100%;box-sizing:border-box;padding:7px 10px;border:0;outline:0;background:transparent;font:inherit;font-size:23px;color:#211b16}
+.stock-modal-input-wrap span{padding:0 12px;font-size:20px;color:#3d372e}
+.stock-modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:13px}
+.stock-modal-actions button{min-height:47px;padding:8px 15px;border-radius:12px;font:inherit;font-size:17px;cursor:pointer}
+.stock-modal-actions .stock-save{border:1px solid #55583d;background:#77795b;color:#fff8e9}
+.stock-modal-actions .stock-cancel{border:1px solid #777;color:#fff;background:#858585}
+.stock-modal-actions button:disabled{opacity:.6;cursor:wait}
+.stock-modal-error{margin:0;color:#982d22;font-size:14px}
 .stock-message,.stock-empty{margin:14px 0;text-align:center;font-size:15px}
 .is-error{color:#8d251d}.is-success{color:#245d32}
 @media(max-width:1050px){.stock-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stock-refresh{position:static;margin:12px auto 0}.stock-heading{display:flex;flex-direction:column}}
-@media(max-width:650px){.stock-header{height:auto;min-height:70px;padding:10px 14px}.stock-brand-copy strong{font-size:19px}.stock-brand-copy small{font-size:11px}.stock-user{font-size:0;gap:8px}.stock-avatar{width:40px;height:40px}.stock-user button{display:block;border:0;background:transparent;font-size:13px}.stock-content{padding:18px 12px 40px}.stock-heading h1{font-size:24px}.stock-grid{grid-template-columns:1fr;gap:15px}.stock-card{grid-template-columns:42% minmax(0,1fr);min-height:155px}.stock-image,.stock-image img{min-height:155px}.stock-card-info h2{font-size:20px}.stock-price,.stock-available{font-size:14px}.stock-edit-button{font-size:15px;min-height:48px}}
+@media(max-width:650px){.stock-modal{padding:20px 16px 16px;border-radius:18px}.stock-modal>h2{font-size:24px}.stock-modal-image{width:88px;height:82px;flex-basis:88px}.stock-modal-product-copy{font-size:16px}.stock-modal-product-copy strong{font-size:20px}.stock-modal-form>label{font-size:17px}.stock-modal-actions{gap:8px}.stock-modal-actions button{font-size:14px;padding:8px 11px}.stock-header{height:auto;min-height:70px;padding:10px 14px}.stock-brand-copy strong{font-size:19px}.stock-brand-copy small{font-size:11px}.stock-user{font-size:0;gap:8px}.stock-avatar{width:40px;height:40px}.stock-user button{display:block;border:0;background:transparent;font-size:13px}.stock-content{padding:18px 12px 40px}.stock-heading h1{font-size:24px}.stock-grid{grid-template-columns:1fr;gap:15px}.stock-card{grid-template-columns:42% minmax(0,1fr);min-height:155px}.stock-image,.stock-image img{min-height:155px}.stock-card-info h2{font-size:20px}.stock-price,.stock-available{font-size:14px}.stock-edit-button{font-size:15px;min-height:48px}}
 </style>
