@@ -2,14 +2,170 @@
 
 Backend REST para la tienda de legumbrería Canasta Express. Está construido con FastAPI, Pydantic, SQLAlchemy asíncrono y PostgreSQL.
 
-## Requisitos y configuración
+## Requisitos
 
-- Python 3.13 y PostgreSQL.
-- Claves de prueba de Stripe y Resend para probar las integraciones externas.
-- Instala dependencias con `python -m pip install -r requirements-prod.txt -r requirements-dev.txt`.
-- Configura en `.env` las variables de base de datos, Stripe, Resend y JWT. Para habilitar Google Sign-In, agrega `GOOGLE_CLIENT_ID` con el ID de cliente OAuth 2.0 de tu aplicación web. No subas secretos al repositorio.
-- En una base vacía, ejecuta `alembic upgrade head`; después inicia con `uvicorn main:app --reload`.
-- La documentación interactiva queda en `/docs`.
+Antes de iniciar, instala:
+
+- **Python 3.13**.
+- **PostgreSQL**.
+- **Node.js y npm** (para ejecutar el frontend).
+- Una cuenta de Stripe con claves de prueba si quieres probar pagos con tarjeta.
+- Una cuenta de Resend si quieres probar correos de recuperación y notificaciones.
+- Una aplicación OAuth de Google si quieres probar el inicio de sesión con Google.
+
+## Puesta en marcha local
+
+Los comandos de esta guía se ejecutan desde la raíz del repositorio, salvo que se indique lo contrario.
+
+### 1. Configurar PostgreSQL
+
+Crea una base de datos vacía en PostgreSQL. Después configura las credenciales en `backend/.env` (consulta `backend/.env.example`).
+
+El proyecto separa dos usuarios de PostgreSQL:
+
+- **`DDL_DB_USER` / `DDL_USER_PASSWORD`:** usuario que utiliza Alembic para crear y modificar la estructura de la base de datos: tablas, columnas, índices y demás objetos del esquema. DDL significa *Data Definition Language*.
+- **`DML_DB_USER` / `DML_USER_PASSWORD`:** usuario que utiliza la aplicación cuando consulta o modifica los datos durante su funcionamiento: `SELECT`, `INSERT`, `UPDATE` y `DELETE`. DML significa *Data Manipulation Language*.
+
+Lo recomendable es utilizar dos usuarios distintos y conceder al usuario DML únicamente los permisos necesarios para operar sobre los datos. **Para una instalación local de prueba también puedes utilizar el mismo usuario en ambos campos**, siempre que sea el usuario propietario de la base de datos (el usuario con el que creaste esa base de datos). En ese caso, coloca el mismo nombre y contraseña en las variables DDL y DML. No uses un usuario limitado que no tenga permisos para ejecutar las migraciones.
+
+### 2. Configurar las variables de entorno
+
+Crea los archivos locales a partir de las plantillas:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Edita ambos archivos y reemplaza los valores de ejemplo por tus propias credenciales. No subas los archivos `.env` al repositorio ni compartas sus secretos.
+
+En `backend/.env`, completa como mínimo:
+
+- Datos de conexión de PostgreSQL: `DB_HOST`, `DB_PORT`, `DB_NAME`.
+- Usuarios y contraseñas DDL/DML.
+- `JWT_SECRET_KEY`: genera un valor aleatorio propio.
+- `STRIPE_API_KEY` y `RESEND_API_KEY` si vas a probar esos servicios.
+- `GOOGLE_CLIENT_ID` si vas a probar Google Sign-In.
+
+En `frontend/.env`, revisa `VITE_API_BASE_URL` y `VITE_BACKEND_TARGET` para que el frontend se comunique con el backend local. Completa también las claves públicas de Google o Stripe si vas a utilizar esas integraciones.
+
+### 3. Instalar dependencias del backend
+
+```bash
+cd backend
+python -m venv .venv
+```
+
+Activa el entorno virtual:
+
+**Linux/macOS**
+```bash
+source .venv/bin/activate
+```
+
+**Windows PowerShell**
+```powershell
+.venv\\Scripts\\Activate.ps1
+```
+
+Instala las dependencias:
+
+```bash
+python -m pip install -r requirements-prod.txt -r requirements-dev.txt
+```
+
+### 4. Crear las tablas, cargar los datos iniciales e iniciar el backend
+
+Asegúrate de que PostgreSQL esté encendido, que la base de datos ya exista y que `backend/.env` tenga los datos correctos. Hay **dos formas de crear las tablas**. Escoge solo una:
+
+#### Opción A: utilizar Alembic (recomendado)
+
+Alembic crea o actualiza la estructura de la base de datos a partir de las migraciones del proyecto. Desde la carpeta `backend/`, ejecuta:
+
+```bash
+alembic upgrade head
+```
+
+Este comando crea las tablas, columnas, índices y demás objetos definidos en las migraciones. **No ejecutes después `create_db.sql` sobre esa misma base de datos:** ese archivo elimina las tablas existentes antes de crearlas.
+
+Las cuentas y secciones iniciales que aparecen en la sección de datos semilla de `create_db.sql` no se cargan al ejecutar las migraciones. Si eliges Alembic, tendrás que crear los usuarios de prueba y los datos iniciales que necesites por separado.
+
+#### Opción B: ejecutar `create_db.sql` (creación manual)
+
+En la raíz del repositorio se encuentra el archivo `create_db.sql`. Este contiene las sentencias SQL para crear los tipos, tablas, índices y también insertar las secciones y los usuarios de prueba.
+
+Puedes copiarlo directamente a tu directorio personal (`home` en Linux), donde normalmente trabajas con tus archivos:
+
+```bash
+cp create_db.sql ~/create_db.sql
+```
+
+Luego ejecuta el archivo completo desde la terminal con `psql`. Por ejemplo, si el usuario de PostgreSQL es `app_user`, la base de datos se llama `ecommerce_db` y PostgreSQL está en `127.0.0.1`:
+
+```bash
+psql -U app_user -d ecommerce_db -h 127.0.0.1 -f ~/create_db.sql
+```
+
+También puedes ejecutarlo mediante la entrada estándar:
+
+```bash
+psql -U app_user -d ecommerce_db -h 127.0.0.1 < ~/create_db.sql
+```
+
+Sustituye `app_user` y `ecommerce_db` por el usuario y el nombre de la base de datos que configuraste. Si guardaste el archivo en otra ubicación, ajusta la ruta. PostgreSQL puede solicitarte la contraseña del usuario.
+
+**Advertencia:** `create_db.sql` es un script destructivo: elimina las tablas y tipos existentes antes de crearlos de nuevo. Úsalo únicamente en una base de datos local vacía o que puedas borrar por completo. No lo ejecutes sobre una base con información que quieras conservar ni después de haber aplicado las migraciones de Alembic.
+
+#### Datos semilla incluidos en `create_db.sql`
+
+El script inserta las secciones iniciales del catálogo y cinco cuentas de prueba, una por cada rol:
+
+| Rol | Correo |
+|---|---|
+| Administrador de tienda (`store_manager`) | `admin.tienda@canasta.com` |
+| Administrador de bodega (`warehouse_manager`) | `bodega@canasta.com` |
+| Encargado de empaque (`packaging_manager`) | `empaque@canasta.com` |
+| Domiciliario (`courier`) | `courier@canasta.com` |
+| Cliente (`customer`) | `cliente@canasta.com` |
+
+La contraseña de todas estas cuentas de prueba es `usuario123*`. El script almacena el hash bcrypt, no la contraseña en texto plano. Estas cuentas son únicamente para desarrollo local; cambia o elimina estas credenciales antes de cualquier despliegue.
+
+#### Iniciar el backend
+
+Después de crear las tablas con **una** de las dos opciones anteriores, desde la carpeta `backend/` inicia la API:
+
+```bash
+uvicorn main:app --reload
+```
+
+El backend estará disponible normalmente en `http://127.0.0.1:8000`. La documentación interactiva de la API estará en [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+### 5. Instalar e iniciar el frontend
+
+Abre otra terminal y, desde la raíz del repositorio, ejecuta:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite mostrará la dirección local del frontend (normalmente [http://localhost:5173](http://localhost:5173)). Abre esa dirección en el navegador.
+
+### 6. Preparar usuarios y datos para probar
+
+La base de datos recién creada no contiene automáticamente productos, secciones ni pedidos. Registra un usuario desde la pantalla de registro o utiliza las cuentas de prueba que se entreguen en el script de datos semilla, si está disponible.
+
+Para probar los distintos paneles, necesitas usuarios con los roles correspondientes:
+
+- `customer`: cliente.
+- `store_manager`: administrador de tienda.
+- `warehouse_manager`: administrador de bodega.
+- `packaging_manager`: encargado de empaque.
+- `courier`: domiciliario.
+
+Después de iniciar sesión, prueba los flujos según el rol. Para recorrer el proceso completo de un pedido, crea primero productos y existencias, inicia sesión como cliente y realiza una compra; luego continúa el flujo con los usuarios de tienda, bodega, empaque y domicilio.
+
 
 ## Imágenes de productos y Docker
 
@@ -62,7 +218,27 @@ No establezcas manualmente el header `Content-Type`: el navegador debe agregar e
 
 Los descuentos del checkout no se aceptan desde el cliente: mientras no exista una regla de elegibilidad validada en el servidor, se aplica `no_aplica`. Las cantidades de carrito y pedido admiten hasta tres decimales para soportar pesos fraccionarios (por ejemplo, 1.5 kg); los productos vendidos por unidad solo aceptan cantidades enteras. El stock también admite tres decimales. Los productos incluyen `image_path` tanto en el resultado de `GET /products/` como en la respuesta de creación/actualización. El frontend debe usar esa ruta para mostrar la imagen; si se sirve desde otro origen, debe resolver la ruta contra la URL base de la API.
 
-## Pruebas y CI
+## Cómo probar las integraciones externas
+
+### Correos y notificaciones con Resend
+
+Configura `RESEND_API_KEY` en `backend/.env` con una API key de tu propia cuenta de [Resend](https://resend.com/).
+
+**Importante para las pruebas:** si tu cuenta todavía no tiene un dominio remitente verificado y estás usando el modo de prueba de Resend, solo podrás enviar correos al correo electrónico asociado/verificado de la cuenta de Resend con la que creaste esa API key. Por tanto, para comprobar la recuperación de contraseña y las notificaciones, registra en Canasta Express ese mismo correo como destinatario. Si intentas enviar a otra dirección, Resend puede rechazar el envío; no significa necesariamente que el flujo del backend esté fallando.
+
+Para enviar a otras direcciones, primero verifica un dominio propio en Resend y configura un remitente permitido para ese dominio. No intentes solucionar esta restricción cambiando únicamente el correo del usuario en la aplicación.
+
+### Pagos con Stripe
+
+Configura una clave secreta de prueba `sk_test_...` en `STRIPE_API_KEY`. Utiliza las tarjetas de prueba de la sección [Tarjetas de prueba de Stripe](#tarjetas-de-prueba-de-stripe). No utilices claves live ni datos de tarjetas reales.
+
+### Inicio de sesión con Google
+
+Configura el mismo OAuth Client ID de tipo aplicación web en el backend y en `frontend/.env`. En Google Cloud Console autoriza el origen local del frontend, normalmente `http://localhost:5173`.
+
+## Pruebas automatizadas
+
+Desde la carpeta `backend/`, con el entorno virtual activado:
 
 ```bash
 python -m compileall -q app tests main.py scripts
@@ -71,7 +247,7 @@ python -m pytest -q
 
 GitHub Actions compila, importa la API, ejecuta la migración contra PostgreSQL temporal y ejecuta las pruebas automatizadas.
 
-Para medir rendimiento de autenticación en un entorno de pruebas, ejecuta `python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3`. El script crea cuentas persistentes y debe usarse solo con una base desechable.
+Para medir rendimiento de autenticación en un entorno de pruebas, desde `backend/` ejecuta `python scripts/performance_auth.py --base-url http://127.0.0.1:8000 --users 60 --runs 3`. El script crea cuentas persistentes y debe usarse solo con una base desechable.
 
 ## Limitaciones conocidas
 
@@ -105,31 +281,6 @@ Utiliza estas tarjetas exclusivamente con las claves de prueba de Stripe (`sk_te
 | Requiere autenticación 3D Secure | `4000 0025 0000 3155` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura |
 
 Para estas tarjetas Visa se utiliza un CVC de tres dígitos. En las pruebas, Stripe acepta cualquier fecha futura y cualquier CVC válido para la marca. Para American Express el CVC tiene cuatro dígitos. Consulta la [documentación oficial de Stripe sobre pruebas](https://docs.stripe.com/testing) para más escenarios y marcas de tarjeta.
-
-### Datos semilla: usuarios de prueba
-
-Los datos semilla que se prepararán para la entrega se limitarán a la tabla `users`: habrá una cuenta por cada rol del sistema (`customer`, `store_manager`, `warehouse_manager`, `packaging_manager` y `courier`). No se insertarán productos, secciones, carritos, pedidos ni otros datos de negocio.
-
-La contraseña se almacenará en la columna de hash usando bcrypt, con un coste compatible con el configurado en el backend. Para que el equipo receptor pueda realizar pruebas manuales, el script SQL incluirá la contraseña en texto plano como comentario inmediatamente antes del registro correspondiente. Por ejemplo:
-
-```sql
--- Texto plano: Cliente123*
-INSERT INTO users (
-    id, first_name, middle_name, first_surname, middle_surname,
-    email, password_hash, role, is_active
-) VALUES (
-    5, 'Maria', 'Elena', 'Torres', 'Castro',
-    'cliente@canasta.com',
-    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
-    'customer',
-    true
-);
-```
-
-### IMPORTANTE:
-Los hashes incluidos en el archivo create_db.sql serán reales y válidos para iniciar sesión. Cada uno se generará a partir de la contraseña correspondiente utilizando el mismo algoritmo, hasher y configuración que emplea el backend. Por tanto, cada contraseña indicada en los comentarios SQL corresponderá exactamente al hash almacenado para ese usuario.
-
-La contraseña en texto plano aparecerá únicamente como comentario para facilitar las pruebas; nunca se insertará como valor en la base de datos.
 
 ### Credenciales de servicios externos para el equipo receptor
 

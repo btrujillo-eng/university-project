@@ -11,6 +11,7 @@ const busy = ref(false)
 const error = ref('')
 const success = ref('')
 const modalMode = ref('delivery')
+const selectedDeliveryStatus = ref('')
 
 const displayName = [props.user.first_name, props.user.first_surname].filter(Boolean).join(' ') || 'Domiciliario'
 const money = value => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -28,6 +29,7 @@ const deliveryLabel = value => ({
 }[value] || value || 'Sin estado')
 const paymentLabel = value => ({ pending: 'Pendiente', succeeded: 'Pagado', failed: 'Fallido', refunded: 'Reembolsado' }[value] || value || 'Sin estado')
 const paymentMethodLabel = value => ({ cash: 'Efectivo', card: 'Tarjeta' }[value] || value || 'No especificado')
+const amountToCollect = order => order?.payment_status === 'succeeded' ? 0 : Number(order?.total_price || 0)
 
 async function loadOrders() {
   loading.value = true
@@ -44,6 +46,7 @@ async function loadOrders() {
 function openDetails(order, mode = 'delivery') {
   selected.value = order
   modalMode.value = mode
+  selectedDeliveryStatus.value = ''
   error.value = ''
 }
 function closeDetails() {
@@ -101,13 +104,8 @@ onMounted(loadOrders)
     </header>
 
     <section class="operations-page courier-page">
-      <div class="operations-title-row courier-title-row">
-        <div>
-          <p class="operations-kicker">OPERACIONES · DOMICILIOS</p>
-          <h1>Panel de Control de Entregas (Domiciliario)</h1>
-          <p>Consulta tus pedidos asignados y actualiza sus estados durante la entrega.</p>
-        </div>
-        <button class="operations-refresh" :disabled="loading" @click="loadOrders">↻ Actualizar</button>
+      <div class="courier-mockup-title">
+        <h1>Panel de Control de Entregas (Domiciliario)</h1>
       </div>
 
       <p v-if="error && !selected" class="operations-alert error">{{ error }}</p>
@@ -115,25 +113,31 @@ onMounted(loadOrders)
       <div v-if="loading && !orders.length" class="operations-empty">Cargando entregas…</div>
       <div v-else-if="orders.length" class="courier-grid">
         <article v-for="order in orders" :key="order.id" class="courier-card">
-          <h2>Pedido #{{ order.id }}</h2>
-          <div class="courier-status-line">
-            <span>Estado de Entrega actual:</span>
-            <span class="courier-status" :class="'delivery-' + order.delivery_status">{{ deliveryLabel(order.delivery_status) }}</span>
+          <h2>{{ order.id }}:</h2>
+          <div class="courier-card-content">
+            <div class="courier-card-main">
+              <div class="courier-status-line">
+                <span>Estado de Entrega actual:</span>
+                <span class="courier-status" :class="'delivery-' + order.delivery_status">{{ deliveryLabel(order.delivery_status) }}</span>
+              </div>
+              <button class="courier-action courier-delivery-action" @click="openDetails(order, 'delivery')">Actualizar estado de entrega</button>
+            </div>
+            <div class="courier-payment-row">
+              <button class="courier-info-button" @click="openDetails(order, 'info')">Ver información de domicilio</button>
+              <div class="courier-payment-main">
+                <div class="courier-payment-line">
+                  <span>Estado de Pago actual:</span>
+                  <span class="courier-status" :class="'payment-' + order.payment_status">{{ paymentLabel(order.payment_status) }}</span>
+                </div>
+                <button
+                  class="courier-action"
+                  :disabled="busy || order.payment_method !== 'cash' || order.payment_status !== 'pending' || order.delivery_status !== 'in_transit'"
+                  :title="order.payment_method !== 'cash' ? 'El pago con tarjeta se confirma automáticamente' : order.delivery_status !== 'in_transit' ? 'Confirma el efectivo cuando el pedido esté en camino' : ''"
+                  @click="confirmPayment(order)"
+                >{{ order.payment_method === 'cash' && order.payment_status === 'pending' ? 'Actualizar estado de pago' : 'Información del pago' }}</button>
+              </div>
+            </div>
           </div>
-          <button class="courier-action" @click="openDetails(order, 'delivery')">Actualizar estado de entrega</button>
-
-          <div class="courier-payment-line">
-            <span>Estado de Pago actual:</span>
-            <span class="courier-status" :class="'payment-' + order.payment_status">{{ paymentLabel(order.payment_status) }}</span>
-          </div>
-          <button
-            class="courier-action"
-            :disabled="busy || order.payment_method !== 'cash' || order.payment_status !== 'pending' || order.delivery_status !== 'in_transit'"
-            :title="order.payment_method !== 'cash' ? 'El pago con tarjeta se confirma automáticamente' : order.delivery_status !== 'in_transit' ? 'Confirma el efectivo cuando el pedido esté en camino' : ''"
-            @click="confirmPayment(order)"
-          >{{ order.payment_method === 'cash' && order.payment_status === 'pending' ? 'Actualizar estado de pago' : 'Información del pago' }}</button>
-
-          <button class="courier-info-button" @click="openDetails(order, 'info')">Ver información de domicilio</button>
         </article>
       </div>
       <div v-else-if="!loading" class="operations-empty">No tienes pedidos asignados en este momento.</div>
@@ -142,34 +146,55 @@ onMounted(loadOrders)
     <div v-if="selected" class="courier-modal-backdrop" @click.self="closeDetails" @keydown.esc="closeDetails">
       <section class="courier-modal" role="dialog" aria-modal="true" :aria-label="'Información del pedido ' + selected.id">
         <button class="courier-modal-close" aria-label="Cerrar" @click="closeDetails">×</button>
-        <p class="operations-kicker">DETALLE DEL DOMICILIO</p>
-        <h2>Pedido #{{ selected.id }}</h2>
-        <div class="courier-modal-meta">
-          <p><strong>Cliente:</strong> {{ selected.customer_name || 'No disponible' }}</p>
-          <p><strong>Fecha:</strong> {{ dateLabel(selected.created_at) }}</p>
-          <p><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city, selected.shipping_department].filter(Boolean).join(', ') || 'No disponible' }}</p>
-          <p><strong>Teléfono:</strong> <a v-if="selected.phone_number" :href="'tel:' + selected.phone_number">{{ selected.phone_number }}</a><span v-else>No disponible</span></p>
-          <p><strong>Referencia:</strong> {{ selected.shipping_details || 'Sin referencia adicional' }}</p>
-          <p><strong>Instrucciones:</strong> {{ selected.shipping_instructions || 'Sin instrucciones adicionales' }}</p>
-          <p><strong>Método de pago:</strong> {{ paymentMethodLabel(selected.payment_method) }}</p>
-        </div>
-        <h3>Productos del pedido</h3>
-        <div v-if="selected.items?.length" class="courier-items">
-          <div v-for="item in selected.items" :key="item.product_id" class="courier-item">
-            <img v-if="item.image_path" :src="API_BASE_URL + item.image_path" :alt="item.product_name">
-            <span v-else class="courier-item-placeholder">♧</span>
-            <div><strong>{{ item.product_name }}</strong><small>{{ item.quantity }} · {{ money(item.unit_price) }} c/u</small></div>
+        <template v-if="modalMode === 'info'">
+          <h2 class="courier-info-modal-title">Detalles de Domicilio - Pedido {{ selected.id }}</h2>
+          <div class="courier-info-modal-content">
+            <p class="courier-info-address"><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city, selected.shipping_department].filter(Boolean).join(', ') || 'No disponible' }}</p>
+            <p class="courier-info-reference"><strong>Referencia:</strong> {{ selected.shipping_details || 'Sin referencia adicional' }}</p>
+            <div class="courier-info-contact">
+              <p><strong>Cliente:</strong><span>{{ selected.customer_name || 'No disponible' }}</span></p>
+              <p><strong>Teléfono:</strong><span>{{ selected.phone_number || 'No disponible' }}</span></p>
+            </div>
+            <p class="courier-info-amount"><strong>Valor a cobrar:</strong> {{ money(amountToCollect(selected)) }}</p>
           </div>
-        </div>
-        <p v-else class="courier-no-items">No hay artículos disponibles para mostrar.</p>
-        <div class="courier-modal-total"><span>Total del pedido</span><strong>{{ money(selected.total_price) }}</strong></div>
-        <div v-if="modalMode === 'delivery'" class="courier-modal-actions">
-          <p v-if="!allowedStatuses(selected).length" class="courier-no-items">No hay transiciones de entrega disponibles para este pedido.</p>
-          <button v-for="status in allowedStatuses(selected)" :key="status" class="courier-action courier-modal-action" :disabled="busy" @click="updateStatus(status)">
-            {{ ({ in_transit: 'Marcar en camino', delivered: 'Marcar como entregado', returned_to_warehouse: 'Devolver a bodega' })[status] || deliveryLabel(status) }}
+          <button class="courier-info-return" @click="closeDetails">
+            <span>Cerrar Detalles y Volver al Panel</span><span aria-hidden="true">→</span>
           </button>
-        </div>
-        <p v-if="error && selected" class="operations-alert error">{{ error }}</p>
+        </template>
+        <template v-else>
+          <h2 class="courier-delivery-title">Actualizar Estado de Entrega - Pedido {{ selected.id }}</h2>
+          <div class="courier-delivery-summary">
+            <span class="courier-delivery-summary-icon" aria-hidden="true">i</span>
+            <div>
+              <p><strong>Cliente:</strong> {{ selected.customer_name || 'No disponible' }}</p>
+              <p><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city, selected.shipping_department].filter(Boolean).join(', ') || 'No disponible' }}</p>
+            </div>
+          </div>
+          <h3 class="courier-delivery-prompt">Seleccionar Nuevo Estado:</h3>
+          <div class="courier-delivery-options">
+            <button
+              v-for="status in allowedStatuses(selected)"
+              :key="status"
+              type="button"
+              class="courier-delivery-option"
+              :class="['courier-option-' + status, { 'is-selected': selectedDeliveryStatus === status }]"
+              :disabled="busy"
+              :aria-pressed="selectedDeliveryStatus === status"
+              @click="selectedDeliveryStatus = status"
+            >
+              <span aria-hidden="true">{{ ({ delivered: '✓', canceled: '✕', returned_to_warehouse: '↶', in_transit: '🚚', pending: '○' })[status] || '•' }}</span>
+              {{ ({ delivered: 'Entregado exitosamente', canceled: 'Cancelado por el cliente', returned_to_warehouse: 'Devuelto al Almacén', in_transit: 'Pedido recogido en CD y en camino', pending: 'Pendiente' })[status] || deliveryLabel(status) }}
+            </button>
+            <p v-if="!allowedStatuses(selected).length" class="courier-no-items">No hay transiciones de entrega disponibles para este pedido.</p>
+          </div>
+          <p v-if="error && selected" class="operations-alert error">{{ error }}</p>
+          <div class="courier-delivery-footer">
+            <button class="courier-delivery-confirm" :disabled="busy || !selectedDeliveryStatus" @click="updateStatus(selectedDeliveryStatus)">
+              {{ busy ? 'Actualizando…' : 'Confirmar Actualización' }}
+            </button>
+            <button class="courier-delivery-cancel" :disabled="busy" @click="closeDetails">Cancelar y volver al panel</button>
+          </div>
+        </template>
       </section>
     </div>
   </main>
@@ -181,12 +206,17 @@ onMounted(loadOrders)
 .courier-user button { padding:7px 0 7px 16px; border:0; border-left:1px solid #998a70; color:#625b49; background:transparent; cursor:pointer; font:inherit; font-size:14px; white-space:nowrap; }
 .courier-avatar { display:grid; width:42px; height:42px; flex:0 0 42px; place-items:center; border-radius:50%; color:#f7ebd1; background:#55583d; }
 .courier-avatar svg { width:27px; height:27px; }
-.courier-page { width:min(100%,1600px); padding-top:42px; }
-.courier-title-row { margin-bottom:28px; }
-.courier-title-row h1 { max-width:900px; }
+.operations-page.courier-page { width:100%; max-width:none; margin:0 auto; padding:34px clamp(22px,4vw,76px) 64px; }
+.courier-mockup-title { margin: 0 0 18px; text-align: center; }
+.courier-mockup-title h1 { margin: 0; color: #211b16; font: 400 clamp(28px, 2.35vw, 38px)/1.2 var(--display); }
 .courier-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; align-items:stretch; }
-.courier-card { display:flex; min-width:0; flex-direction:column; gap:9px; padding:19px 17px 17px; border:1px solid #dfc39c; border-radius:17px; background:#f1dfbb; box-shadow:0 7px 17px #67482b20; }
-.courier-card h2 { margin:0 0 2px; color:#211b16; font:500 29px/1.15 var(--body); }
+.courier-card { display:flex; min-width:0; flex-direction:column; gap:9px; padding:17px 14px 14px; border:1px solid #dfc39c; border-radius:17px; background:#f1dfbb; box-shadow:0 7px 17px #67482b20; }
+.courier-card h2 { margin:0 0 2px; color:#211b16; font:500 27px/1.15 var(--body); }
+.courier-card-content { display:flex; min-width:0; flex-direction:column; gap:8px; }
+.courier-card-main { display:flex; min-width:0; flex-direction:column; gap:8px; }
+.courier-delivery-action { align-self:flex-end; width:min(100%, 74%); }
+.courier-payment-row { display:grid; grid-template-columns:minmax(112px,.34fr) minmax(0,1fr); gap:10px; align-items:stretch; }
+.courier-payment-main { display:flex; min-width:0; flex-direction:column; gap:8px; }
 .courier-status-line,.courier-payment-line { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:#211b16; font-size:clamp(16px,1.35vw,21px); line-height:1.35; }
 .courier-status { display:inline-flex; align-items:center; padding:2px 7px; border-radius:9px; color:#302719; background:#d8d8d8; white-space:nowrap; }
 .courier-status.delivery-in_transit { background:#e7b34f; }
@@ -198,7 +228,116 @@ onMounted(loadOrders)
 .courier-action:hover,.courier-info-button:hover { background:#41442e; }
 .courier-action:disabled { opacity:.58; cursor:not-allowed; }
 .courier-payment-line { margin-top:3px; }
-.courier-info-button { margin-top:2px; border:1px solid #41442e; background:#77795b; }
+.courier-info-button { align-self:stretch; min-height:100%; margin:0; border:1px solid #41442e; background:#77795b; }
+.courier-payment-line { margin-top:3px; }
+.courier-modal:has(.courier-info-modal-title) {
+  width: min(550px, 100%);
+  max-height: min(90vh, 900px);
+  padding: 48px 22px 20px;
+  border-radius: 20px;
+  background: #f2dfb5;
+}
+.courier-info-modal-title {
+  margin: 0 18px 28px 0 !important;
+  color: #211b16 !important;
+  text-align: center;
+  font: 400 clamp(21px, 1.8vw, 29px)/1.25 var(--display) !important;
+}
+.courier-info-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0 14px;
+  color: #211b16;
+  font-size: clamp(17px, 1.65vw, 25px);
+  line-height: 1.3;
+}
+.courier-info-modal-content p { margin: 0; overflow-wrap: anywhere; }
+.courier-info-modal-content strong { font-weight: 700; }
+.courier-info-address,.courier-info-reference { padding-left: 38px; text-indent: -0px; }
+.courier-info-contact { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:4px; }
+.courier-info-contact p { display:flex; flex-direction:column; gap:3px; }
+.courier-info-amount { margin-top:2px !important; text-align:center; font-size:1.12em; font-weight:600; }
+.courier-info-return {
+  display:flex;
+  width:100%;
+  min-height:54px;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:38px;
+  padding:10px 17px 10px 25px;
+  border:1px solid #41442e;
+  border-radius:12px;
+  color:#fff8e9;
+  background:#55583d;
+  cursor:pointer;
+  font:500 clamp(16px, 1.4vw, 22px) var(--body);
+}
+.courier-info-return:hover { background:#41442e; }
+.courier-info-return span:last-child { font-size:1.35em; }
+@media(max-width:560px) {
+  .courier-modal:has(.courier-info-modal-title) { padding:44px 17px 17px; }
+  .courier-info-modal-content { gap:18px; padding:0 4px; font-size:17px; }
+  .courier-info-address,.courier-info-reference { padding-left:0; }
+  .courier-info-contact { gap:10px; }
+  .courier-info-return { margin-top:26px; padding-inline:14px; font-size:15px; }
+}
+
+.courier-modal:has(.courier-delivery-title) {
+  width:min(550px,100%);
+  padding:40px 24px 22px;
+  border-radius:20px;
+  background:#f2dfb5;
+}
+.courier-modal .courier-delivery-title {
+  margin:0 26px 18px 0;
+  color:#211b16;
+  text-align:center;
+  font:400 clamp(21px,1.75vw,28px)/1.2 var(--display);
+}
+.courier-delivery-summary {
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:12px 15px;
+  border:1px solid #e0c99d;
+  border-radius:15px;
+  background:#ead8ad;
+  box-shadow:0 3px 7px #60462220;
+}
+.courier-delivery-summary-icon {
+  display:grid;
+  width:32px;height:32px;flex:0 0 32px;place-items:center;
+  border-radius:50%;color:#f8edda;background:#443020;font-weight:700;font-size:20px;
+}
+.courier-delivery-summary p { margin:2px 0;color:#211b16;font-size:17px;line-height:1.3; }
+.courier-modal .courier-delivery-prompt { margin:17px 0 8px;color:#211b16;font:600 22px/1.2 var(--body); }
+.courier-delivery-options { display:flex;flex-direction:column;gap:7px;min-height:280px; }
+.courier-delivery-option {
+  display:flex;min-height:46px;align-items:center;justify-content:center;gap:9px;
+  padding:7px 12px;border:2px solid #65552f;border-radius:12px;
+  color:#211b16;background:#f5e5c2;cursor:pointer;
+  font:400 clamp(16px,1.55vw,22px)/1.2 var(--body);
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.courier-delivery-option span {font-weight:700;font-size:1.2em;}
+.courier-delivery-option.courier-option-delivered {border-color:#16a34a;}
+.courier-delivery-option.courier-option-canceled {border-color:#dc2626;}
+.courier-delivery-option.courier-option-in_transit {border-color:#e7b34f;}
+.courier-delivery-option.is-selected {background:#e8d4a7;box-shadow:inset 0 0 0 1px currentColor;}
+.courier-delivery-option:disabled {opacity:.6;cursor:not-allowed;}
+.courier-delivery-footer {display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px;}
+.courier-delivery-footer button {min-height:49px;padding:8px 10px;border-radius:11px;cursor:pointer;font:500 16px/1.15 var(--body);}
+.courier-delivery-confirm {border:1px solid #41442e;color:#fff8e9;background:#55583d;}
+.courier-delivery-confirm:disabled {opacity:.5;cursor:not-allowed;}
+.courier-delivery-cancel {border:1px solid #b8a98e;color:#fff8e9;background:#938c76;}
+@media(max-width:560px) {
+ .courier-modal:has(.courier-delivery-title){padding:42px 16px 17px;}
+ .courier-delivery-summary p{font-size:15px;}
+ .courier-delivery-options{min-height:0;}
+ .courier-delivery-footer{grid-template-columns:1fr;}
+}
 .courier-modal-backdrop { position:fixed; z-index:50; inset:0; display:grid; place-items:center; overflow-y:auto; padding:22px; background:#211a13a8; backdrop-filter:blur(3px); }
 .courier-modal { position:relative; width:min(760px,100%); max-height:min(90vh,900px); overflow-y:auto; padding:28px; border:1px solid #d6bd94; border-radius:20px; color:#292318; background:#fff8eb; box-shadow:0 18px 55px #21170f55; }
 .courier-modal-close { position:absolute; top:18px; right:18px; width:38px; height:38px; border:1px solid #cbb997; border-radius:50%; color:#292318; background:#f3e5c9; cursor:pointer; font-size:25px; line-height:1; }
@@ -222,12 +361,15 @@ onMounted(loadOrders)
   .courier-user { gap:7px; font-size:12px; }
   .courier-avatar { width:34px; height:34px; flex-basis:34px; }
   .courier-user button { padding-left:9px; font-size:12px; }
-  .courier-page { padding:25px 14px 45px; }
-  .courier-title-row { align-items:flex-start; }
-  .courier-title-row h1 { font-size:25px; }
+  .operations-page.courier-page { padding:25px 14px 45px; }
+  .courier-mockup-title { margin-bottom:18px; }
+  .courier-mockup-title h1 { font-size:25px; }
   .courier-grid { grid-template-columns:1fr; gap:14px; }
   .courier-card h2 { font-size:25px; }
   .courier-status-line,.courier-payment-line { font-size:17px; }
+  .courier-delivery-action { width:100%; }
+  .courier-payment-row { grid-template-columns:minmax(0,1fr); }
+  .courier-info-button { min-height:43px; }
   .courier-action,.courier-info-button { font-size:16px; }
   .courier-modal { padding:22px 17px; }
   .courier-modal-meta { grid-template-columns:1fr; }
