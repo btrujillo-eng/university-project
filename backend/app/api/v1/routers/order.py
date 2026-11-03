@@ -213,6 +213,7 @@ async def checkout(
         shipping_instructions=data.shipping.delivery_instructions,
         shipping_city=data.shipping.city,
         phone_number=data.shipping.phone_number,
+        order_items=[],
     )
     session.add(order)
     await session.flush()
