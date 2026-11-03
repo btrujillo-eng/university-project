@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.payment import PaymentMethodRequest, PaymentResponse
-from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus
+from app.domain.enums import DeliveryStatus, PaymentMethods, PaymentStatus, UnitOfMeasure
 
 
 class ShippingAddressRequest(BaseModel):
@@ -36,6 +36,7 @@ class OrderItemResponse(BaseModel):
     product_name: str
     unit_price: Decimal
     quantity: Decimal
+    unit_of_measure: UnitOfMeasure
     image_path: str | None = None
 
 
