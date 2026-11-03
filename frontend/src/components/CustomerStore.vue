@@ -498,10 +498,12 @@ onBeforeUnmount(() => {
         <p class="receipt-message">Tu pedido fue registrado correctamente.</p>
 
         <div class="receipt-meta">
-          <span>Fecha</span><strong>{{ receiptDateLabel(checkoutResult.order.created_at) }}</strong>
-          <span>Estado del pago</span>
-          <strong>{{ checkoutResult.order.payment_status === 'succeeded' ? 'Pagado' : 'Pendiente contraentrega' }}</strong>
-          <span>Método de pago</span><strong>{{ paymentLabel(checkoutResult.order.payment_method) }}</strong>
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>Fecha</span>
+          <strong>{{ receiptDateLabel(checkoutResult.order.created_at) }}</strong>
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Estado del pago</span>
+          <strong><span class="receipt-payment-status" :class="{ paid: checkoutResult.order.payment_status === 'succeeded' }">{{ checkoutResult.order.payment_status === 'succeeded' ? 'Pagado' : 'Pendiente contraentrega' }}</span></strong>
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Método de pago</span>
+          <strong>{{ paymentLabel(checkoutResult.order.payment_method) }}</strong>
         </div>
 
         <div class="receipt-lines">
