@@ -66,6 +66,7 @@ def _to_response(order: Order, *, include_allowed_delivery_statuses: bool = Fals
             product_name=item.product.name,
             unit_price=item.unit_price,
             quantity=item.quantity,
+            unit_of_measure=item.product.unit_of_measure,
             image_path=item.product.image_path,
         )
         for item in order.order_items

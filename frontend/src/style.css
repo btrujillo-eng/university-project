@@ -2795,80 +2795,456 @@ input, button, select, textarea { font-family: var(--body); }
   height: 58px;
 }
 
- 
-/* Order detail — increase typography and product imagery to match the mockup scale. */
-.order-detail-page .customer-page-title {
-  font-size: clamp(32px, 2.5vw, 40px);
-  margin-bottom: 24px;
+
+/* Packaging manager — match the pending-orders table mockup */
+.packaging-mockup-shell {
+  min-height: 100vh;
+  color: #211d1a;
+  background: #f1e4ca;
 }
-.order-detail-page .order-detail-panel {
-  padding: 19px 17px;
+.packaging-mockup-shell .packaging-mockup-header {
+  position: relative;
+  display: flex !important;
+  min-height: 94px;
+  padding: 10px clamp(20px, 3.5vw, 38px);
+  background: #f2e5c9;
+  box-shadow: 0 5px 18px rgba(69, 48, 29, .2);
 }
-.order-detail-page .order-detail-panel h2 {
-  margin-bottom: 16px;
-  font-size: clamp(25px, 1.9vw, 31px);
+.packaging-mockup-shell .customer-brand { gap: 12px; }
+.packaging-mockup-shell .customer-brand-mark {
+  width: 62px;
+  height: 62px;
+  flex-basis: 62px;
+  border-radius: 16px;
 }
-.order-detail-page .order-information-row {
-  gap: 7px;
-  font-size: clamp(19px, 1.45vw, 23px);
+.packaging-mockup-shell .customer-brand-mark svg { width: 30px; height: 30px; }
+.packaging-mockup-shell .customer-brand strong {
+  color: #211d1a;
+  font: 400 clamp(25px, 2vw, 34px)/1.05 var(--display);
 }
-.order-detail-page .order-information-panel p {
-  margin-top: 17px;
-  font-size: clamp(19px, 1.45vw, 23px);
-  line-height: 1.35;
+.packaging-mockup-shell .customer-brand small {
+  margin-top: 3px;
+  color: #29251f;
+  font-size: clamp(12px, 1vw, 16px);
 }
-.order-detail-page .detail-status {
-  min-height: 34px;
-  padding: 4px 13px;
-  font-size: clamp(17px, 1.25vw, 20px);
+.packaging-account {
+  display: flex;
+  min-height: 66px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 15px 5px 10px;
+  border: 2px solid #a8792d;
+  border-radius: 12px;
+  color: #211d1a;
+  font: 400 clamp(17px, 1.45vw, 25px) var(--body);
 }
-.order-detail-page .purchased-item {
-  grid-template-columns: 78px minmax(0, 1fr) auto;
-  gap: 12px;
-  padding: 13px 0;
+.packaging-account-avatar { display: grid; width: 46px; height: 46px; place-items: center; }
+.packaging-account-avatar svg { width: 44px; height: 44px; }
+.packaging-account button {
+  margin-left: 8px;
+  padding: 5px 0 5px 10px;
+  border: 0;
+  border-left: 1px solid #b9a17c;
+  color: #65543a;
+  background: transparent;
+  cursor: pointer;
+  font: 13px var(--body);
 }
-.order-detail-page .purchased-item > img,
-.order-detail-page .purchased-item > .purchased-placeholder {
-  width: 78px;
-  height: 78px;
+.packaging-mockup-page {
+  width: min(100% - 36px, 1330px);
+  margin: 0 auto;
+  padding: clamp(45px, 5vw, 82px) 0 60px;
+}
+.packaging-mockup-page > h1 {
+  margin: 0 0 26px;
+  color: #211d1a;
+  text-align: center;
+  font: 400 clamp(27px, 2.8vw, 45px)/1.2 var(--display);
+  letter-spacing: .005em;
+}
+.packaging-table-panel {
+  padding: 13px 12px 20px;
+  border: 1.5px solid #cdbb9d;
+  border-radius: 14px;
+  background: rgba(255, 249, 235, .18);
+}
+.packaging-table-toolbar {
+  position: relative;
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+}
+.packaging-count {
+  margin: 0;
+  color: #27221c;
+  text-align: center;
+  font-size: clamp(17px, 1.55vw, 25px);
+}
+.packaging-switch-view {
+  position: absolute;
+  right: 5px;
+  padding: 5px 8px;
+  border: 0;
+  color: #655c49;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.packaging-table-scroll { overflow-x: auto; }
+.packaging-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+}
+.packaging-table th {
+  padding: 13px 10px 9px;
+  border-bottom: 2px solid #cdbb9d;
+  color: #211d1a;
+  font-size: clamp(19px, 1.8vw, 30px);
+  font-weight: 600;
+}
+.packaging-table td {
+  height: 74px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #d9cbb4;
+  color: #211d1a;
+  font-size: clamp(19px, 1.7vw, 28px);
+}
+.packaging-table tbody tr:nth-child(even) { background: rgba(221, 199, 163, .34); }
+.packaging-table tbody tr:last-child td { border-bottom: 0; }
+.packaging-table th:nth-child(1), .packaging-table td:nth-child(1) { width: 22%; }
+.packaging-table th:nth-child(2), .packaging-table td:nth-child(2) { width: 30%; }
+.packaging-table th:nth-child(3), .packaging-table td:nth-child(3) { width: 20%; }
+.packaging-table th:nth-child(4), .packaging-table td:nth-child(4) { width: 28%; }
+.packaging-view-button {
+  min-width: 172px;
+  min-height: 50px;
+  padding: 7px 20px;
+  border: 1px solid #626b45;
+  border-radius: 13px;
+  color: #fffaf0;
+  background: #77845a;
+  cursor: pointer;
+  font: 400 clamp(18px, 1.45vw, 24px) var(--body);
+  transition: background .15s ease;
+}
+.packaging-view-button:hover { background: #626f48; }
+.packaging-table-message {
+  padding: 38px 16px;
+  color: #5e5545;
+  text-align: center;
+  font-size: 18px;
+}
+.packaging-mockup-shell .packaging-detail {
+  max-width: 900px;
+  margin: 24px auto 0;
+  border: 1px solid #d4c3a7;
+  background: #fffaf0;
+}
+.packaging-mockup-shell .packaging-close-detail {
+  padding: 7px 13px;
+  border: 1px solid #8c806b;
+  border-radius: 8px;
+  color: #4e4b37;
+  background: transparent;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .packaging-mockup-shell .packaging-mockup-header { min-height: 78px; padding: 9px 13px; }
+  .packaging-mockup-shell .customer-brand-mark { width: 46px; height: 46px; flex-basis: 46px; }
+  .packaging-mockup-shell .customer-brand strong { font-size: 20px; }
+  .packaging-mockup-shell .customer-brand small { font-size: 10px; }
+  .packaging-account { min-height: 45px; gap: 5px; padding: 4px 8px; font-size: 13px; }
+  .packaging-account-avatar, .packaging-account-avatar svg { width: 30px; height: 30px; }
+  .packaging-account button { margin-left: 3px; padding-left: 6px; font-size: 11px; }
+  .packaging-mockup-page { width: min(100% - 24px, 1330px); padding-top: 38px; }
+  .packaging-mockup-page > h1 { font-size: clamp(22px, 5vw, 30px); }
+  .packaging-table-panel { padding: 9px 7px 12px; }
+  .packaging-table-toolbar { min-height: 54px; flex-direction: column; gap: 4px; }
+  .packaging-switch-view { position: static; font-size: 11px; }
+  .packaging-table { min-width: 620px; }
+  .packaging-table th { font-size: 17px; }
+  .packaging-table td { height: 62px; font-size: 17px; }
+  .packaging-view-button { min-width: 125px; min-height: 42px; font-size: 17px; }
+}
+
+
+/* Packaging order items dialog: make the "Ver Ítems" action immediately visible. */
+.packaging-dialog-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(30, 27, 20, .58);
+}
+.packaging-items-dialog {
+  width: min(100%, 760px);
+  max-height: min(88vh, 900px);
+  overflow-y: auto;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid #d5c5a8;
+  border-radius: 18px;
+  color: #29251f;
+  background: #fffaf0;
+  box-shadow: 0 18px 55px rgba(25, 20, 12, .3);
+}
+.packaging-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #ded1b9;
+}
+.packaging-dialog-header p {
+  margin: 0 0 5px;
+  color: #77704f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.packaging-dialog-header h2 {
+  margin: 0;
+  color: #173f2b;
+  font: 600 clamp(22px, 2.5vw, 30px)/1.2 var(--display);
+}
+.packaging-dialog-close {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid #cbbda5;
+  border-radius: 50%;
+  color: #4e4b37;
+  background: #f2e7d1;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+}
+.packaging-dialog-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  padding: 16px 0;
+}
+.packaging-dialog-meta p {
+  margin: 0;
+  color: #5d5548;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.packaging-items-dialog h3 {
+  margin: 8px 0 10px;
+  color: #173f2b;
+  font: 600 19px var(--display);
+}
+.packaging-dialog-items {
+  border-top: 1px solid #ded1b9;
+}
+.packaging-dialog-item {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5dac8;
+}
+.packaging-dialog-item img,
+.packaging-dialog-item-placeholder {
+  display: grid;
+  width: 68px;
+  height: 62px;
+  place-items: center;
   border-radius: 10px;
+  object-fit: cover;
+  color: #626346;
+  background: #eee3cd;
+  font-size: 28px;
 }
-.order-detail-page .purchased-item-description {
+.packaging-dialog-item-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   gap: 5px;
-  font-size: clamp(17px, 1.3vw, 20px);
 }
-.order-detail-page .purchased-item-description small,
-.order-detail-page .purchased-price small {
-  font-size: clamp(15px, 1.1vw, 18px);
+.packaging-dialog-item-info strong {
+  color: #29251f;
+  font-size: 15px;
 }
-.order-detail-page .purchased-price {
-  gap: 6px;
-  font-size: clamp(17px, 1.3vw, 20px);
+.packaging-dialog-item-info small {
+  color: #746a59;
+  font-size: 13px;
 }
-.order-detail-page .cost-detail-panel p {
-  margin: 13px 0;
-  font-size: clamp(19px, 1.45vw, 23px);
+.packaging-dialog-item-price {
+  color: #17472e;
+  font-size: 14px;
+  white-space: nowrap;
 }
-.order-detail-page .cost-detail-panel .order-detail-total {
-  font-size: clamp(23px, 1.8vw, 28px);
+.packaging-dialog-empty {
+  padding: 20px 0;
+  color: #756c5b;
+  text-align: center;
 }
-@media (max-width: 620px) {
-  .order-detail-page .purchased-item {
-    grid-template-columns: 68px minmax(0, 1fr) auto;
+.packaging-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 18px;
+}
+.packaging-dialog-footer > strong {
+  color: #173f2b;
+  font-size: 18px;
+  white-space: nowrap;
+}
+.packaging-dialog-footer .operations-primary {
+  width: auto;
+  min-width: 230px;
+  margin: 0;
+  padding: 10px 16px;
+}
+@media (max-width: 560px) {
+  .packaging-dialog-backdrop { padding: 12px; }
+  .packaging-items-dialog { padding: 18px; }
+  .packaging-dialog-meta { grid-template-columns: 1fr; }
+  .packaging-dialog-item { grid-template-columns: 54px minmax(0, 1fr); gap: 10px; }
+  .packaging-dialog-item img,
+  .packaging-dialog-item-placeholder { width: 54px; height: 52px; }
+  .packaging-dialog-item-price { grid-column: 2; }
+  .packaging-dialog-footer { align-items: stretch; flex-direction: column; }
+  .packaging-dialog-footer .operations-primary { width: 100%; min-width: 0; }
+}
+
+
+/* Packaging checklist detail — layout aligned with the supplied packing mockup. */
+.packaging-order-detail-page {
+  width: min(100% - 48px, 1420px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 58px) 0 54px;
+  text-align: center;
+}
+.packaging-order-detail-page > h1 {
+  margin: 0 0 26px;
+  color: #211d1a;
+  font: 400 clamp(28px, 3vw, 48px)/1.2 var(--display);
+  letter-spacing: .01em;
+}
+.packaging-back-button {
+  display: block;
+  margin: 0 0 16px auto;
+  padding: 8px 14px;
+  border: 1px solid #bfae90;
+  border-radius: 8px;
+  color: #3e4930;
+  background: #f7ecd7;
+  cursor: pointer;
+  font: 16px var(--body);
+}
+.packaging-checklist-panel {
+  overflow-x: auto;
+  padding: 8px 14px 14px;
+  border: 1.5px solid #cdbb9d;
+  border-radius: 15px;
+  background: rgba(255, 249, 235, .18);
+}
+.packaging-checklist {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+}
+.packaging-checklist th {
+  padding: 0 16px 12px;
+  border-bottom: 2px solid #cdbb9d;
+  color: #211d1a;
+  font-size: clamp(23px, 2.5vw, 42px);
+  font-weight: 700;
+}
+.packaging-checklist td {
+  height: 72px;
+  padding: 8px 16px;
+  color: #211d1a;
+  font-size: clamp(20px, 2vw, 34px);
+}
+.packaging-checklist tbody tr {
+  transition: background .12s ease;
+}
+.packaging-checklist tbody tr.is-packed {
+  background: rgba(221, 199, 163, .48);
+}
+.packaging-check-column {
+  width: 25%;
+}
+.packaging-checklist th:nth-child(2),
+.packaging-checklist td:nth-child(2) { width: 48%; }
+.packaging-checklist th:nth-child(3),
+.packaging-checklist td:nth-child(3) { width: 27%; }
+.packaging-check-heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.packaging-checklist input[type="checkbox"] {
+  width: clamp(24px, 2.2vw, 34px);
+  height: clamp(24px, 2.2vw, 34px);
+  margin: 0;
+  accent-color: #77845a;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.packaging-checklist input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+.packaging-checklist-empty {
+  color: #706653 !important;
+  font-size: 18px !important;
+}
+.packaging-checklist-error {
+  max-width: 900px;
+  margin: 18px auto 0;
+}
+.packaging-confirm-button {
+  min-height: 62px;
+  margin: 26px auto 0;
+  padding: 10px 30px;
+  border: 1px solid #626b45;
+  border-radius: 13px;
+  color: #fffaf0;
+  background: #77845a;
+  cursor: pointer;
+  font: 400 clamp(20px, 1.8vw, 30px) var(--body);
+  transition: background .15s ease, opacity .15s ease;
+}
+.packaging-confirm-button:hover:not(:disabled) { background: #626f48; }
+.packaging-confirm-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+@media (max-width: 700px) {
+  .packaging-order-detail-page {
+    width: min(100% - 24px, 1420px);
+    padding-top: 28px;
   }
-  .order-detail-page .purchased-item > img,
-  .order-detail-page .purchased-item > .purchased-placeholder {
-    width: 68px;
-    height: 68px;
-  }
-  .order-detail-page .purchased-item-description {
-    font-size: 16px;
-  }
-  .order-detail-page .purchased-price {
-    font-size: 16px;
-  }
-  .order-detail-page .purchased-item-description small,
-  .order-detail-page .purchased-price small {
-    font-size: 14px;
+  .packaging-order-detail-page > h1 { font-size: 25px; }
+  .packaging-checklist-panel { padding: 8px; }
+  .packaging-checklist th { font-size: 19px; }
+  .packaging-checklist td { height: 58px; font-size: 18px; }
+  .packaging-checklist input[type="checkbox"] { width: 23px; height: 23px; }
+  .packaging-confirm-button {
+    width: 100%;
+    min-height: 52px;
+    padding: 9px 12px;
+    font-size: 19px;
   }
 }
