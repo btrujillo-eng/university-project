@@ -516,14 +516,15 @@ onBeforeUnmount(() => {
           <p><strong>Método de Pago:</strong> {{ paymentLabel(checkoutResult.order.payment_method) }}</p>
         </div>
         <div class="receipt-item-table">
-          <div class="receipt-item-head"><strong>CANT.</strong><strong>DESCRIPCIÓN</strong><strong>UNITARIO</strong><strong>TOTAL</strong></div>
+          <div class="receipt-item-head"><strong>QTY</strong><strong>DESCRIPCIÓN</strong><strong>UNITARIO</strong><strong>TOTAL</strong></div>
           <div v-for="item in checkoutResult.order.items" :key="item.product_id" class="receipt-item-row">
             <span>{{ quantity(item.quantity) }}</span><span>{{ item.product_name }}</span>
             <span>{{ money(item.unit_price) }}</span><strong>{{ money(Number(item.unit_price) * Number(item.quantity)) }}</strong>
           </div>
         </div>
         <div class="receipt-summary">
-          <div><span>Subtotal:</span><strong>{{ money(checkoutResult.order.total_price) }}</strong></div>
+          <div class="receipt-summary-line"><span>Subtotal:</span><strong>{{ money(checkoutResult.order.items.reduce((sum, item) => sum + Number(item.unit_price) * Number(item.quantity), 0)) }}</strong></div>
+          <div class="receipt-summary-line"><span>Envío a Medellín:</span><strong>Gratis</strong></div>
           <div class="receipt-grand-total"><span>TOTAL {{ checkoutResult.order.payment_status === 'succeeded' ? 'PAGADO' : 'DEL PEDIDO' }}:</span><strong>{{ money(checkoutResult.order.total_price) }}</strong></div>
         </div>
         <footer class="receipt-ticket-footer">
