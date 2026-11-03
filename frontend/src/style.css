@@ -2701,6 +2701,10 @@ input, button, select, textarea { font-family: var(--body); }
 .purchased-price strong {
   font-weight: 500;
 }
+/* Keep the three receipt panels on one row at desktop widths. */
+.cost-detail-panel {
+  grid-column: auto;
+}
 .cost-detail-panel p {
   display: flex;
   justify-content: space-between;
@@ -2726,7 +2730,7 @@ input, button, select, textarea { font-family: var(--body); }
 .cost-detail-panel .order-detail-total strong {
   font-weight: 700;
 }
-@media (max-width: 900px) {
+@media (max-width: 760px) {
   .order-detail-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
