@@ -2629,8 +2629,8 @@ input, button, select, textarea { font-family: var(--body); }
 }
 .order-detail-page .order-status.pending,
 .order-detail-page .order-status.packaged {
-  color: #171717;
-  background: #ffc928;
+  color: #fff;
+  background: #858585;
 }
 .order-detail-page .order-status.in-transit {
   color: #171717;
