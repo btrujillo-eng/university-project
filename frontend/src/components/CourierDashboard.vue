@@ -112,27 +112,23 @@ onMounted(loadOrders)
         <article v-for="order in orders" :key="order.id" class="courier-card">
           <h2>{{ order.id }}:</h2>
           <div class="courier-card-content">
+            <button class="courier-info-button" @click="openDetails(order, 'info')">Ver información de domicilio</button>
             <div class="courier-card-main">
               <div class="courier-status-line">
                 <span>Estado de Entrega actual:</span>
                 <span class="courier-status" :class="'delivery-' + order.delivery_status">{{ deliveryLabel(order.delivery_status) }}</span>
               </div>
               <button class="courier-action" @click="openDetails(order, 'delivery')">Actualizar estado de entrega</button>
-            </div>
-            <div class="courier-payment-row">
-              <button class="courier-info-button" @click="openDetails(order, 'info')">Ver información de domicilio</button>
-              <div class="courier-payment-main">
-                <div class="courier-payment-line">
-                  <span>Estado de Pago actual:</span>
-                  <span class="courier-status" :class="'payment-' + order.payment_status">{{ paymentLabel(order.payment_status) }}</span>
-                </div>
-                <button
-                  class="courier-action"
-                  :disabled="busy || order.payment_method !== 'cash' || order.payment_status !== 'pending' || order.delivery_status !== 'in_transit'"
-                  :title="order.payment_method !== 'cash' ? 'El pago con tarjeta se confirma automáticamente' : order.delivery_status !== 'in_transit' ? 'Confirma el efectivo cuando el pedido esté en camino' : ''"
-                  @click="confirmPayment(order)"
-                >{{ order.payment_method === 'cash' && order.payment_status === 'pending' ? 'Actualizar estado de pago' : 'Información del pago' }}</button>
+              <div class="courier-payment-line">
+                <span>Estado de Pago actual:</span>
+                <span class="courier-status" :class="'payment-' + order.payment_status">{{ paymentLabel(order.payment_status) }}</span>
               </div>
+              <button
+                class="courier-action"
+                :disabled="busy || order.payment_method !== 'cash' || order.payment_status !== 'pending' || order.delivery_status !== 'in_transit'"
+                :title="order.payment_method !== 'cash' ? 'El pago con tarjeta se confirma automáticamente' : order.delivery_status !== 'in_transit' ? 'Confirma el efectivo cuando el pedido esté en camino' : ''"
+                @click="confirmPayment(order)"
+              >{{ order.payment_method === 'cash' && order.payment_status === 'pending' ? 'Actualizar estado de pago' : 'Información del pago' }}</button>
             </div>
           </div>
         </article>
@@ -190,8 +186,6 @@ onMounted(loadOrders)
 .courier-card h2 { margin:0 0 2px; color:#211b16; font:500 27px/1.15 var(--body); }
 .courier-card-content { display:grid; min-width:0; grid-template-columns:minmax(112px,.34fr) minmax(0,1fr); grid-template-areas:"info main"; gap:10px; align-items:stretch; }
 .courier-card-main { grid-area:main; display:flex; min-width:0; flex-direction:column; gap:8px; }
-.courier-payment-row { display:contents; }
-.courier-payment-main { display:contents; }
 .courier-status-line,.courier-payment-line { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:#211b16; font-size:clamp(16px,1.35vw,21px); line-height:1.35; }
 .courier-status { display:inline-flex; align-items:center; padding:2px 7px; border-radius:9px; color:#302719; background:#d8d8d8; white-space:nowrap; }
 .courier-status.delivery-in_transit { background:#e7b34f; }
@@ -204,7 +198,7 @@ onMounted(loadOrders)
 .courier-action:disabled { opacity:.58; cursor:not-allowed; }
 .courier-payment-line { margin-top:3px; }
 .courier-info-button { grid-area:info; align-self:stretch; min-height:100%; margin:0; border:1px solid #41442e; background:#77795b; }
-.courier-payment-line { grid-column:2; }
+.courier-payment-line { margin-top:3px; }
 .courier-modal-backdrop { position:fixed; z-index:50; inset:0; display:grid; place-items:center; overflow-y:auto; padding:22px; background:#211a13a8; backdrop-filter:blur(3px); }
 .courier-modal { position:relative; width:min(760px,100%); max-height:min(90vh,900px); overflow-y:auto; padding:28px; border:1px solid #d6bd94; border-radius:20px; color:#292318; background:#fff8eb; box-shadow:0 18px 55px #21170f55; }
 .courier-modal-close { position:absolute; top:18px; right:18px; width:38px; height:38px; border:1px solid #cbb997; border-radius:50%; color:#292318; background:#f3e5c9; cursor:pointer; font-size:25px; line-height:1; }
@@ -235,7 +229,6 @@ onMounted(loadOrders)
   .courier-card h2 { font-size:25px; }
   .courier-status-line,.courier-payment-line { font-size:17px; }
   .courier-card-content { grid-template-columns:minmax(0,1fr); grid-template-areas:"main" "info"; }
-  .courier-payment-line { grid-column:1; }
   .courier-info-button { min-height:43px; }
   .courier-action,.courier-info-button { font-size:16px; }
   .courier-modal { padding:22px 17px; }
