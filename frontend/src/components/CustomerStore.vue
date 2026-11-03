@@ -79,6 +79,9 @@ function imageUrl(path) {
 function dateLabel(value) {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(new Date(value))
 }
+function receiptDateLabel(value) {
+  return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value))
+}
 function statusLabel(value) {
   return ({
     pending: 'Pendiente',
@@ -354,7 +357,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="customer-app" :class="{ 'customer-payment-mode': screen === 'payment' }">
+  <main class="customer-app" :class="{ 'customer-payment-mode': screen === 'payment', 'customer-confirmation-mode': screen === 'confirmation' }">
     <header class="customer-header">
       <a href="#" class="customer-brand" @click.prevent="returnToCatalog">
         <span class="customer-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
@@ -480,16 +483,45 @@ onBeforeUnmount(() => {
 
     <section v-else-if="screen === 'confirmation'" class="customer-page confirmation-page">
       <article class="digital-receipt">
-        <div class="receipt-brand"><span class="customer-brand-mark">♧</span><strong>Canasta Express</strong></div>
-        <p class="receipt-kicker">Pedido Confirmado</p>
+        <div class="receipt-brand">
+          <span class="receipt-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <strong>Canasta Express</strong>
+        </div>
+        <p class="receipt-kicker">Pedido confirmado</p>
         <h1>¡Gracias por tu compra!</h1>
         <p class="receipt-number">Pedido #{{ checkoutResult?.order?.id }}</p>
-        <p>Tu pedido fue registrado correctamente.</p>
-        <div class="receipt-meta"><span>Fecha</span><strong>{{ dateLabel(checkoutResult.order.created_at) }}</strong><span>Estado del pago</span><strong>{{ checkoutResult.order.payment_status === 'succeeded' ? 'Pagado' : 'Pendiente contraentrega' }}</strong><span>Método de pago</span><strong>{{ paymentLabel(checkoutResult.order.payment_method) }}</strong></div>
-        <div class="receipt-lines"><div v-for="item in checkoutResult.order.items" :key="item.product_id"><span>{{ item.product_name }} × {{ quantity(item.quantity) }}</span><strong>{{ money(Number(item.unit_price) * Number(item.quantity)) }}</strong></div></div>
-        <div class="receipt-total"><span>Total del pedido</span><strong>{{ money(checkoutResult.order.total_price) }}</strong></div>
-        <p v-if="receipt" class="receipt-reference">Comprobante {{ receipt.receipt_number }} · Transacción {{ checkoutResult.payment.transaction_id }}</p>
-        <p v-else class="receipt-reference">Recuerda tener listo el efectivo para pagar al domiciliario cuando recibas tu pedido.</p>
+        <p class="receipt-message">Tu pedido fue registrado correctamente.</p>
+
+        <div class="receipt-meta">
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17"/></svg>Fecha</span>
+          <strong>{{ receiptDateLabel(checkoutResult.order.created_at) }}</strong>
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Estado del pago</span>
+          <strong><span class="receipt-payment-status" :class="{ paid: checkoutResult.order.payment_status === 'succeeded' }">{{ checkoutResult.order.payment_status === 'succeeded' ? 'Pagado' : 'Pendiente contraentrega' }}</span></strong>
+          <span class="receipt-meta-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Método de pago</span>
+          <strong>{{ paymentLabel(checkoutResult.order.payment_method) }}</strong>
+        </div>
+
+        <div class="receipt-lines">
+          <div v-for="item in checkoutResult.order.items" :key="item.product_id">
+            <span>{{ item.product_name }} × {{ quantity(item.quantity) }}</span>
+            <strong>{{ money(Number(item.unit_price) * Number(item.quantity)) }}</strong>
+          </div>
+        </div>
+        <div class="receipt-total">
+          <span>Total del pedido</span>
+          <strong>{{ money(checkoutResult.order.total_price) }}</strong>
+        </div>
+        <p v-if="receipt" class="receipt-reference">
+          Comprobante {{ receipt.receipt_number }} · Transacción {{ checkoutResult.payment.transaction_id }}
+        </p>
+        <p v-else class="receipt-reference">
+          Recuerda tener listo el efectivo para pagar al domiciliario cuando recibas tu pedido.
+        </p>
         <button type="button" class="customer-primary-button" @click="startShoppingAgain">Regresar al Catálogo</button>
         <button type="button" class="customer-text-button" @click="openHistory">Ver Mis Pedidos</button>
       </article>
