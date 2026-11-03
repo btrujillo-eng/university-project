@@ -1981,3 +1981,34 @@ input, button, select, textarea { font-family: var(--body); }
     font-size: 19px;
   }
 }
+
+
+.customer-confirmation-mode .receipt-meta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.customer-confirmation-mode .receipt-meta-label svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  fill: none;
+  stroke: #17643a;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.customer-confirmation-mode .receipt-payment-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  color: #655026;
+  background: #f5e5bd;
+  font-weight: 700;
+}
+.customer-confirmation-mode .receipt-payment-status.paid {
+  color: #07552c;
+  background: #d8edaa;
+}
