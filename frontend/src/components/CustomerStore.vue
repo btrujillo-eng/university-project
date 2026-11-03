@@ -637,3 +637,81 @@ onBeforeUnmount(() => {
     </div>
   </main>
 </template>
+
+
+/* Order detail — increase typography and product imagery to match the mockup scale. */
+.order-detail-page .customer-page-title {
+  font-size: clamp(32px, 2.5vw, 40px);
+  margin-bottom: 24px;
+}
+.order-detail-page .order-detail-panel {
+  padding: 19px 17px;
+}
+.order-detail-page .order-detail-panel h2 {
+  margin-bottom: 16px;
+  font-size: clamp(25px, 1.9vw, 31px);
+}
+.order-detail-page .order-information-row {
+  gap: 7px;
+  font-size: clamp(19px, 1.45vw, 23px);
+}
+.order-detail-page .order-information-panel p {
+  margin-top: 17px;
+  font-size: clamp(19px, 1.45vw, 23px);
+  line-height: 1.35;
+}
+.order-detail-page .detail-status {
+  min-height: 34px;
+  padding: 4px 13px;
+  font-size: clamp(17px, 1.25vw, 20px);
+}
+.order-detail-page .purchased-item {
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 13px 0;
+}
+.order-detail-page .purchased-item > img,
+.order-detail-page .purchased-item > .purchased-placeholder {
+  width: 78px;
+  height: 78px;
+  border-radius: 10px;
+}
+.order-detail-page .purchased-item-description {
+  gap: 5px;
+  font-size: clamp(17px, 1.3vw, 20px);
+}
+.order-detail-page .purchased-item-description small,
+.order-detail-page .purchased-price small {
+  font-size: clamp(15px, 1.1vw, 18px);
+}
+.order-detail-page .purchased-price {
+  gap: 6px;
+  font-size: clamp(17px, 1.3vw, 20px);
+}
+.order-detail-page .cost-detail-panel p {
+  margin: 13px 0;
+  font-size: clamp(19px, 1.45vw, 23px);
+}
+.order-detail-page .cost-detail-panel .order-detail-total {
+  font-size: clamp(23px, 1.8vw, 28px);
+}
+@media (max-width: 620px) {
+  .order-detail-page .purchased-item {
+    grid-template-columns: 68px minmax(0, 1fr) auto;
+  }
+  .order-detail-page .purchased-item > img,
+  .order-detail-page .purchased-item > .purchased-placeholder {
+    width: 68px;
+    height: 68px;
+  }
+  .order-detail-page .purchased-item-description {
+    font-size: 16px;
+  }
+  .order-detail-page .purchased-price {
+    font-size: 16px;
+  }
+  .order-detail-page .purchased-item-description small,
+  .order-detail-page .purchased-price small {
+    font-size: 14px;
+  }
+}
