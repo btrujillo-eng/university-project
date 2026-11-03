@@ -542,16 +542,17 @@ onBeforeUnmount(() => {
       <div v-else-if="orders.length" class="customer-order-grid">
         <article v-for="(order, index) in orders" :key="order.id" class="customer-order-card">
           <div class="order-parcel-icon" aria-hidden="true">
-            <svg viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 91 25 48Q27 39 36 39h66q8 0 10 9l7 43v34H18V91Z" fill="#E9A66F" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
-              <path d="m26 54 8-14h69l8 14H26Z" fill="#F1BC8D" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M54 41h23v22H54z" fill="#F6D7A8" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
-              <circle cx="66" cy="82" r="14" fill="#91A85B" stroke="#17130F" stroke-width="5"/>
-              <path d="M5 105q0-7 7-7h48q7 0 7 7v25H5v-25Z" fill="#E7A06C" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
-              <path d="M18 98h18v15l-9-5-9 5V98Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M77 91q0-7 7-7h49q7 0 7 7v39H77V91Z" fill="#E9B477" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
-              <path d="M92 84h19v16l-9-5-10 5V84Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
-              <path d="M119 116h12" stroke="#17130F" stroke-width="5" stroke-linecap="round"/>
+            <svg viewBox="0 0 180 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bolsas de mercado">
+              <path d="M42 99 48 28Q49 15 62 15H116Q128 15 130 28L137 99H42Z" fill="#E9A66F" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M49 34 57 17H120L129 34H49Z" fill="#F1BC8D" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M76 17H99V43H76Z" fill="#F6D7A8" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M43 47 54 34H125" stroke="#17130F" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="88" cy="66" r="14" fill="#91A85B" stroke="#17130F" stroke-width="5"/>
+              <path d="M8 105Q8 98 16 98H66Q73 98 73 106V132H8V105Z" fill="#E7A06C" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M23 99H43V116L33 110L23 116V99Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M91 91Q91 83 99 83H151Q159 83 159 91V132H91V91Z" fill="#E9B477" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M108 84H129V103L118 97L108 103V84Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M135 117H148" stroke="#17130F" stroke-width="5" stroke-linecap="round"/>
             </svg>
           </div>
           <div class="order-card-content">
