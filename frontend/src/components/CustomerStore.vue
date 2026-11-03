@@ -541,7 +541,7 @@ onBeforeUnmount(() => {
       <div v-if="loading" class="customer-empty">Cargando historial…</div>
       <div v-else-if="orders.length" class="customer-order-grid">
         <article v-for="(order, index) in orders" :key="order.id" class="customer-order-card">
-          <div class="order-parcel-icon" aria-hidden="true">▣</div>
+          <div class="order-parcel-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
           <div class="order-card-content">
             <div class="order-card-heading"><h2>Pedido #{{ index + 1 }}</h2><span class="order-status" :class="statusClass(order.delivery_status)">{{ statusLabel(order.delivery_status) }}</span></div>
             <strong class="order-public-id">#{{ order.id }}</strong>
