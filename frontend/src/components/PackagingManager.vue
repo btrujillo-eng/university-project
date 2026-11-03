@@ -1,17 +1,21 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { API_BASE_URL, getPackagingOrders, markOrderPackaged } from '../services/api'
+import { computed, onMounted, ref } from 'vue'
+import { getPackagingOrders, markOrderPackaged } from '../services/api'
 
 const props = defineProps({ user: { type: Object, required: true }, token: { type: String, required: true } })
 const emit = defineEmits(['logout'])
 const orders = ref([])
 const selected = ref(null)
+const packedItemIds = ref([])
 const returned = ref(false)
 const loading = ref(false)
 const busy = ref(false)
 const error = ref('')
 const success = ref('')
 const displayName = [props.user.first_name, props.user.first_surname].filter(Boolean).join(' ') || 'Encargado de empaque'
+const items = computed(() => Array.isArray(selected.value?.items) ? selected.value.items : [])
+const itemKey = (item, index) => item.product_id ?? item.id ?? index
+const allItemsPacked = computed(() => items.value.length > 0 && items.value.every((item, index) => packedItemIds.value.includes(itemKey(item, index))))
 const money = value => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(value || 0))
 const dateLabel = value => {
   const date = new Date(value)
@@ -20,29 +24,48 @@ const dateLabel = value => {
   return `${part('day')} / ${part('month').replace('.', '')} / ${part('year')}`
 }
 function openOrderItems(order) {
-  // The packaging endpoint already returns the complete OrderResponse, including items.
-  // Show the detail as a dialog so it is immediately visible without scrolling below the table.
   selected.value = order
+  packedItemIds.value = []
+  error.value = ''
 }
 function closeOrderItems() {
-  if (!busy.value) selected.value = null
+  if (!busy.value) {
+    selected.value = null
+    packedItemIds.value = []
+    error.value = ''
+  }
+}
+function toggleItem(item, index, checked) {
+  const key = itemKey(item, index)
+  packedItemIds.value = checked
+    ? [...new Set([...packedItemIds.value, key])]
+    : packedItemIds.value.filter(id => id !== key)
+}
+function toggleAllItems(checked) {
+  packedItemIds.value = checked ? items.value.map(itemKey) : []
 }
 async function loadOrders() {
   loading.value = true
   error.value = ''
   success.value = ''
   selected.value = null
+  packedItemIds.value = []
   try { orders.value = await getPackagingOrders(props.token, returned.value) }
   catch (e) { error.value = e.message || 'No fue posible consultar los pedidos.' }
   finally { loading.value = false }
 }
 async function packageOrder(order) {
+  if (!allItemsPacked.value) {
+    error.value = 'Debes marcar todos los productos como empacados antes de confirmar.'
+    return
+  }
   busy.value = true
   error.value = ''
   success.value = ''
   try {
     await markOrderPackaged(order.id, props.token)
     selected.value = null
+    packedItemIds.value = []
     success.value = `El pedido #${order.id} quedó marcado como empacado.`
     await loadOrders()
   } catch (e) {
@@ -72,9 +95,8 @@ onMounted(loadOrders)
       </div>
     </header>
 
-    <section class="packaging-mockup-page">
+    <section v-if="!selected" class="packaging-mockup-page">
       <h1>{{ returned ? 'PEDIDOS DEVUELTOS A BODEGA' : 'PEDIDOS PENDIENTES PARA EMPAQUE' }}</h1>
-
       <div class="packaging-table-panel">
         <div class="packaging-table-toolbar">
           <p class="packaging-count" v-if="!loading">Se encontraron {{ orders.length }} pedidos {{ returned ? 'devueltos' : 'pendientes' }}</p>
@@ -83,15 +105,12 @@ onMounted(loadOrders)
             {{ returned ? 'Ver pedidos pendientes' : 'Ver pedidos devueltos a bodega' }}
           </button>
         </div>
-
         <p v-if="error" class="operations-alert error">{{ error }}</p>
         <p v-if="success" class="operations-alert success">{{ success }}</p>
         <div v-if="loading" class="packaging-table-message">Cargando pedidos…</div>
         <div v-else-if="orders.length" class="packaging-table-scroll">
           <table class="packaging-table">
-            <thead>
-              <tr><th>ID PEDIDO</th><th>FECHA EMISIÓN</th><th>ESTADO</th><th>ACCIONES</th></tr>
-            </thead>
+            <thead><tr><th>ID PEDIDO</th><th>FECHA EMISIÓN</th><th>ESTADO</th><th>ACCIONES</th></tr></thead>
             <tbody>
               <tr v-for="order in orders" :key="order.id">
                 <td data-label="ID PEDIDO">{{ order.id }}</td>
@@ -108,44 +127,45 @@ onMounted(loadOrders)
       </div>
     </section>
 
-    <div v-if="selected" class="packaging-dialog-backdrop" @click.self="closeOrderItems" @keydown.esc="closeOrderItems">
-      <section class="packaging-items-dialog" role="dialog" aria-modal="true" :aria-labelledby="'packaging-dialog-title-' + selected.id">
-        <header class="packaging-dialog-header">
-          <div>
-            <p>DETALLE DEL PEDIDO</p>
-            <h2 :id="'packaging-dialog-title-' + selected.id">Pedido #{{ selected.id }}</h2>
-          </div>
-          <button class="packaging-dialog-close" type="button" aria-label="Cerrar detalle" @click="closeOrderItems">×</button>
-        </header>
-
-        <div class="packaging-dialog-meta">
-          <p><strong>Cliente:</strong> {{ selected.customer_name || 'No disponible' }}</p>
-          <p><strong>Fecha:</strong> {{ dateLabel(selected.created_at) }}</p>
-          <p><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city].filter(Boolean).join(', ') || 'No disponible' }}</p>
-          <p><strong>Teléfono:</strong> {{ selected.phone_number || 'No disponible' }}</p>
-        </div>
-
-        <h3>Productos que debes preparar</h3>
-        <div v-if="selected.items?.length" class="packaging-dialog-items">
-          <article v-for="item in selected.items" :key="item.product_id" class="packaging-dialog-item">
-            <img v-if="item.image_path" :src="API_BASE_URL + item.image_path" :alt="item.product_name">
-            <span v-else class="packaging-dialog-item-placeholder" aria-hidden="true">♧</span>
-            <div class="packaging-dialog-item-info">
-              <strong>{{ item.product_name }}</strong>
-              <small>{{ item.quantity }} unidades</small>
-            </div>
-            <strong class="packaging-dialog-item-price">{{ money(Number(item.unit_price) * Number(item.quantity)) }}</strong>
-          </article>
-        </div>
-        <p v-else class="packaging-dialog-empty">Este pedido no contiene artículos para mostrar.</p>
-
-        <footer class="packaging-dialog-footer">
-          <strong>Total: {{ money(selected.total_price) }}</strong>
-          <button class="operations-primary" type="button" :disabled="busy || returned" @click="packageOrder(selected)">
-            {{ busy ? 'Actualizando…' : 'Marcar pedido como empacado' }}
-          </button>
-        </footer>
-      </section>
-    </div>
+    <section v-else class="packaging-order-detail-page">
+      <button class="packaging-back-button" type="button" @click="closeOrderItems" :disabled="busy">← Volver a pedidos</button>
+      <h1>DETALLE DEL PEDIDO {{ selected.id }}</h1>
+      <div class="packaging-checklist-panel">
+        <table class="packaging-checklist">
+          <thead>
+            <tr>
+              <th class="packaging-check-column">
+                <label class="packaging-check-heading">
+                  <input type="checkbox" :checked="allItemsPacked" :disabled="items.length === 0 || returned || busy" @change="toggleAllItems($event.target.checked)">
+                  <span>EMPACADO</span>
+                </label>
+              </th>
+              <th>PRODUCTO</th>
+              <th>CANTIDAD</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in items" :key="itemKey(item, index)" :class="{ 'is-packed': packedItemIds.includes(itemKey(item, index)) }">
+              <td class="packaging-check-column">
+                <input
+                  type="checkbox"
+                  :aria-label="`Marcar ${item.product_name} como empacado`"
+                  :checked="packedItemIds.includes(itemKey(item, index))"
+                  :disabled="returned || busy"
+                  @change="toggleItem(item, index, $event.target.checked)"
+                >
+              </td>
+              <td>{{ item.product_name }}</td>
+              <td>{{ item.quantity }} {{ item.unit || '' }}</td>
+            </tr>
+            <tr v-if="items.length === 0"><td colspan="3" class="packaging-checklist-empty">Este pedido no contiene artículos para preparar.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-if="error" class="operations-alert error packaging-checklist-error">{{ error }}</p>
+      <button class="packaging-confirm-button" type="button" :disabled="busy || returned || !allItemsPacked" @click="packageOrder(selected)">
+        {{ busy ? 'Confirmando empaque…' : 'Confirmar Empaque del Pedido' }}
+      </button>
+    </section>
   </main>
 </template>
