@@ -2291,3 +2291,84 @@ input, button, select, textarea { font-family: var(--body); }
 .customer-confirmation-mode .receipt-summary-line span {
   text-align: right;
 }
+
+
+/* Order history: align the cards with the approved mockup and prevent
+   horizontal clipping on narrow viewports. */
+.history-page {
+  width: min(100%, 1920px);
+  min-width: 0;
+  margin-inline: auto;
+  overflow-x: clip;
+}
+.history-page .customer-order-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 25px;
+}
+.history-page .customer-order-card {
+  min-width: 0;
+  min-height: 216px;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 23px 22px;
+}
+.history-page .order-parcel-icon {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  color: #55583d;
+  background: #e4d7bc;
+}
+.history-page .order-parcel-icon svg {
+  width: 34px;
+  height: 34px;
+}
+.history-page .order-card-content {
+  min-width: 0;
+}
+.history-page .order-card-heading {
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.history-page .order-card-heading h2 {
+  overflow-wrap: anywhere;
+}
+.history-page .order-card-content p {
+  overflow-wrap: anywhere;
+}
+.history-page .customer-order-detail-button {
+  min-height: 41px;
+  margin-top: 15px;
+  padding: 9px 15px;
+}
+@media (max-width: 850px) {
+  .history-page {
+    padding-inline: 18px;
+  }
+  .history-page .customer-order-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .history-page .customer-order-card {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px 13px;
+  }
+  .history-page .order-parcel-icon {
+    width: 50px;
+    height: 50px;
+  }
+  .history-page .order-parcel-icon svg {
+    width: 27px;
+    height: 27px;
+  }
+  .history-page .order-card-heading {
+    align-items: flex-start;
+  }
+}
