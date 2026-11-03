@@ -101,13 +101,8 @@ onMounted(loadOrders)
     </header>
 
     <section class="operations-page courier-page">
-      <div class="operations-title-row courier-title-row">
-        <div>
-          <p class="operations-kicker">OPERACIONES · DOMICILIOS</p>
-          <h1>Panel de Control de Entregas (Domiciliario)</h1>
-          <p>Consulta tus pedidos asignados y actualiza sus estados durante la entrega.</p>
-        </div>
-        <button class="operations-refresh" :disabled="loading" @click="loadOrders">↻ Actualizar</button>
+      <div class="courier-mockup-title">
+        <h1>Panel de Control de Entregas (Domiciliario)</h1>
       </div>
 
       <p v-if="error && !selected" class="operations-alert error">{{ error }}</p>
@@ -115,7 +110,7 @@ onMounted(loadOrders)
       <div v-if="loading && !orders.length" class="operations-empty">Cargando entregas…</div>
       <div v-else-if="orders.length" class="courier-grid">
         <article v-for="order in orders" :key="order.id" class="courier-card">
-          <h2>Pedido #{{ order.id }}</h2>
+          <h2>{{ order.id }}:</h2>
           <div class="courier-card-content">
             <div class="courier-card-main">
               <div class="courier-status-line">
@@ -185,13 +180,13 @@ onMounted(loadOrders)
 .courier-avatar { display:grid; width:42px; height:42px; flex:0 0 42px; place-items:center; border-radius:50%; color:#f7ebd1; background:#55583d; }
 .courier-avatar svg { width:27px; height:27px; }
 .courier-page { width:min(100%,1600px); padding-top:42px; }
-.courier-title-row { margin-bottom:28px; }
-.courier-title-row h1 { max-width:900px; }
+.courier-mockup-title { margin: 0 0 24px; text-align: center; }
+.courier-mockup-title h1 { margin: 0; color: #211b16; font: 400 clamp(28px, 3vw, 43px)/1.2 var(--display); }
 .courier-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; align-items:stretch; }
 .courier-card { display:flex; min-width:0; flex-direction:column; gap:9px; padding:19px 17px 17px; border:1px solid #dfc39c; border-radius:17px; background:#f1dfbb; box-shadow:0 7px 17px #67482b20; }
 .courier-card h2 { margin:0 0 2px; color:#211b16; font:500 29px/1.15 var(--body); }
-.courier-card-content { display:grid; grid-template-columns:minmax(112px,.38fr) minmax(0,1fr); gap:10px; align-items:stretch; }
-.courier-card-main { display:flex; min-width:0; flex-direction:column; gap:8px; }
+.courier-card-content { display:grid; grid-template-columns:minmax(112px,.38fr) minmax(0,1fr); grid-template-areas:"info main"; gap:10px; align-items:stretch; }
+.courier-card-main { grid-area:main; display:flex; min-width:0; flex-direction:column; gap:8px; }
 .courier-status-line,.courier-payment-line { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:#211b16; font-size:clamp(16px,1.35vw,21px); line-height:1.35; }
 .courier-status { display:inline-flex; align-items:center; padding:2px 7px; border-radius:9px; color:#302719; background:#d8d8d8; white-space:nowrap; }
 .courier-status.delivery-in_transit { background:#e7b34f; }
@@ -203,7 +198,7 @@ onMounted(loadOrders)
 .courier-action:hover,.courier-info-button:hover { background:#41442e; }
 .courier-action:disabled { opacity:.58; cursor:not-allowed; }
 .courier-payment-line { margin-top:3px; }
-.courier-info-button { align-self:stretch; min-height:100%; margin:0; border:1px solid #41442e; background:#77795b; }
+.courier-info-button { grid-area:info; align-self:stretch; min-height:100%; margin:0; border:1px solid #41442e; background:#77795b; }
 .courier-modal-backdrop { position:fixed; z-index:50; inset:0; display:grid; place-items:center; overflow-y:auto; padding:22px; background:#211a13a8; backdrop-filter:blur(3px); }
 .courier-modal { position:relative; width:min(760px,100%); max-height:min(90vh,900px); overflow-y:auto; padding:28px; border:1px solid #d6bd94; border-radius:20px; color:#292318; background:#fff8eb; box-shadow:0 18px 55px #21170f55; }
 .courier-modal-close { position:absolute; top:18px; right:18px; width:38px; height:38px; border:1px solid #cbb997; border-radius:50%; color:#292318; background:#f3e5c9; cursor:pointer; font-size:25px; line-height:1; }
@@ -228,12 +223,12 @@ onMounted(loadOrders)
   .courier-avatar { width:34px; height:34px; flex-basis:34px; }
   .courier-user button { padding-left:9px; font-size:12px; }
   .courier-page { padding:25px 14px 45px; }
-  .courier-title-row { align-items:flex-start; }
-  .courier-title-row h1 { font-size:25px; }
+  .courier-mockup-title { margin-bottom:18px; }
+  .courier-mockup-title h1 { font-size:25px; }
   .courier-grid { grid-template-columns:1fr; gap:14px; }
   .courier-card h2 { font-size:25px; }
   .courier-status-line,.courier-payment-line { font-size:17px; }
-  .courier-card-content { grid-template-columns:minmax(0,1fr); }
+  .courier-card-content { grid-template-columns:minmax(0,1fr); grid-template-areas:"main" "info"; }
   .courier-info-button { min-height:43px; }
   .courier-action,.courier-info-button { font-size:16px; }
   .courier-modal { padding:22px 17px; }
