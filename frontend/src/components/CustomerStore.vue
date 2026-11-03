@@ -541,7 +541,19 @@ onBeforeUnmount(() => {
       <div v-if="loading" class="customer-empty">Cargando historial…</div>
       <div v-else-if="orders.length" class="customer-order-grid">
         <article v-for="(order, index) in orders" :key="order.id" class="customer-order-card">
-          <div class="order-parcel-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M16 25V12m0 4c-6.2 0-9-3.1-9-8.2 5.9 0 9 2.9 9 8.2Zm0-2.2c0-5.8 2.9-8.5 9-8.5 0 5.7-2.9 8.5-9 8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 26h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <div class="order-parcel-icon" aria-hidden="true">
+            <svg viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 91 25 48Q27 39 36 39h66q8 0 10 9l7 43v34H18V91Z" fill="#E9A66F" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="m26 54 8-14h69l8 14H26Z" fill="#F1BC8D" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M54 41h23v22H54z" fill="#F6D7A8" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <circle cx="66" cy="82" r="14" fill="#91A85B" stroke="#17130F" stroke-width="5"/>
+              <path d="M5 105q0-7 7-7h48q7 0 7 7v25H5v-25Z" fill="#E7A06C" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M18 98h18v15l-9-5-9 5V98Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M77 91q0-7 7-7h49q7 0 7 7v39H77V91Z" fill="#E9B477" stroke="#17130F" stroke-width="6" stroke-linejoin="round"/>
+              <path d="M92 84h19v16l-9-5-10 5V84Z" fill="#F5D5A4" stroke="#17130F" stroke-width="5" stroke-linejoin="round"/>
+              <path d="M119 116h12" stroke="#17130F" stroke-width="5" stroke-linecap="round"/>
+            </svg>
+          </div>
           <div class="order-card-content">
             <div class="order-card-heading"><h2>Pedido #{{ index + 1 }}</h2><span class="order-status" :class="statusClass(order.delivery_status)">{{ statusLabel(order.delivery_status) }}</span></div>
             <strong class="order-public-id">#{{ order.id }}</strong>
