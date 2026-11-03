@@ -19,6 +19,14 @@ const dateLabel = value => {
   const part = type => parts.find(item => item.type === type)?.value ?? ''
   return `${part('day')} / ${part('month').replace('.', '')} / ${part('year')}`
 }
+function openOrderItems(order) {
+  // The packaging endpoint already returns the complete OrderResponse, including items.
+  // Show the detail as a dialog so it is immediately visible without scrolling below the table.
+  selected.value = order
+}
+function closeOrderItems() {
+  if (!busy.value) selected.value = null
+}
 async function loadOrders() {
   loading.value = true
   error.value = ''
@@ -34,6 +42,7 @@ async function packageOrder(order) {
   success.value = ''
   try {
     await markOrderPackaged(order.id, props.token)
+    selected.value = null
     success.value = `El pedido #${order.id} quedó marcado como empacado.`
     await loadOrders()
   } catch (e) {
@@ -88,7 +97,7 @@ onMounted(loadOrders)
                 <td data-label="ID PEDIDO">{{ order.id }}</td>
                 <td data-label="FECHA EMISIÓN">{{ dateLabel(order.created_at) }}</td>
                 <td data-label="ESTADO">{{ returned ? 'Devuelto a bodega' : 'Pendiente' }}</td>
-                <td data-label="ACCIONES"><button class="packaging-view-button" type="button" @click="selected = order">Ver Ítems</button></td>
+                <td data-label="ACCIONES"><button class="packaging-view-button" type="button" @click="openOrderItems(order)">Ver Ítems</button></td>
               </tr>
             </tbody>
           </table>
@@ -97,27 +106,46 @@ onMounted(loadOrders)
           {{ returned ? 'No hay pedidos devueltos a bodega.' : 'No hay pedidos pendientes de empaque.' }}
         </div>
       </div>
-
-      <aside v-if="selected" class="operations-detail packaging-detail">
-        <div class="operations-detail-heading">
-          <h2>Pedido #{{ selected.id }}</h2>
-          <button class="packaging-close-detail" type="button" @click="selected = null">Cerrar</button>
-        </div>
-        <p><strong>Cliente:</strong> {{ selected.customer_name }}</p>
-        <p><strong>Dirección:</strong> {{ selected.shipping_street }}, {{ selected.shipping_neighborhood }}, {{ selected.shipping_city }}</p>
-        <p><strong>Teléfono:</strong> {{ selected.phone_number }}</p>
-        <p><strong>Pago:</strong> {{ selected.payment_method === 'cash' ? 'Efectivo' : 'Tarjeta' }} · {{ selected.payment_status }}</p>
-        <h3>Productos que debes preparar</h3>
-        <div v-for="item in selected.items" :key="item.product_id" class="operations-item">
-          <img v-if="item.image_path" :src="API_BASE_URL + item.image_path" :alt="item.product_name">
-          <span v-else>♧</span>
-          <div><strong>{{ item.product_name }}</strong><small>{{ item.quantity }} unidades</small></div>
-        </div>
-        <div class="operations-total"><span>Total del pedido</span><strong>{{ money(selected.total_price) }}</strong></div>
-        <button class="operations-primary" :disabled="busy || returned" @click="packageOrder(selected)">
-          {{ busy ? 'Actualizando…' : 'Marcar pedido como empacado' }}
-        </button>
-      </aside>
     </section>
+
+    <div v-if="selected" class="packaging-dialog-backdrop" @click.self="closeOrderItems" @keydown.esc="closeOrderItems">
+      <section class="packaging-items-dialog" role="dialog" aria-modal="true" :aria-labelledby="'packaging-dialog-title-' + selected.id">
+        <header class="packaging-dialog-header">
+          <div>
+            <p>DETALLE DEL PEDIDO</p>
+            <h2 :id="'packaging-dialog-title-' + selected.id">Pedido #{{ selected.id }}</h2>
+          </div>
+          <button class="packaging-dialog-close" type="button" aria-label="Cerrar detalle" @click="closeOrderItems">×</button>
+        </header>
+
+        <div class="packaging-dialog-meta">
+          <p><strong>Cliente:</strong> {{ selected.customer_name || 'No disponible' }}</p>
+          <p><strong>Fecha:</strong> {{ dateLabel(selected.created_at) }}</p>
+          <p><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city].filter(Boolean).join(', ') || 'No disponible' }}</p>
+          <p><strong>Teléfono:</strong> {{ selected.phone_number || 'No disponible' }}</p>
+        </div>
+
+        <h3>Productos que debes preparar</h3>
+        <div v-if="selected.items?.length" class="packaging-dialog-items">
+          <article v-for="item in selected.items" :key="item.product_id" class="packaging-dialog-item">
+            <img v-if="item.image_path" :src="API_BASE_URL + item.image_path" :alt="item.product_name">
+            <span v-else class="packaging-dialog-item-placeholder" aria-hidden="true">♧</span>
+            <div class="packaging-dialog-item-info">
+              <strong>{{ item.product_name }}</strong>
+              <small>{{ item.quantity }} unidades</small>
+            </div>
+            <strong class="packaging-dialog-item-price">{{ money(Number(item.unit_price) * Number(item.quantity)) }}</strong>
+          </article>
+        </div>
+        <p v-else class="packaging-dialog-empty">Este pedido no contiene artículos para mostrar.</p>
+
+        <footer class="packaging-dialog-footer">
+          <strong>Total: {{ money(selected.total_price) }}</strong>
+          <button class="operations-primary" type="button" :disabled="busy || returned" @click="packageOrder(selected)">
+            {{ busy ? 'Actualizando…' : 'Marcar pedido como empacado' }}
+          </button>
+        </footer>
+      </section>
+    </div>
   </main>
 </template>
