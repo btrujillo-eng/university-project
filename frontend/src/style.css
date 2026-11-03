@@ -2794,3 +2794,180 @@ input, button, select, textarea { font-family: var(--body); }
   width: 58px;
   height: 58px;
 }
+
+
+/* Packaging manager — match the pending-orders table mockup */
+.packaging-mockup-shell {
+  min-height: 100vh;
+  color: #211d1a;
+  background: #f1e4ca;
+}
+.packaging-mockup-shell .packaging-mockup-header {
+  position: relative;
+  display: flex !important;
+  min-height: 94px;
+  padding: 10px clamp(20px, 3.5vw, 38px);
+  background: #f2e5c9;
+  box-shadow: 0 5px 18px rgba(69, 48, 29, .2);
+}
+.packaging-mockup-shell .customer-brand { gap: 12px; }
+.packaging-mockup-shell .customer-brand-mark {
+  width: 62px;
+  height: 62px;
+  flex-basis: 62px;
+  border-radius: 16px;
+}
+.packaging-mockup-shell .customer-brand-mark svg { width: 30px; height: 30px; }
+.packaging-mockup-shell .customer-brand strong {
+  color: #211d1a;
+  font: 400 clamp(25px, 2vw, 34px)/1.05 var(--display);
+}
+.packaging-mockup-shell .customer-brand small {
+  margin-top: 3px;
+  color: #29251f;
+  font-size: clamp(12px, 1vw, 16px);
+}
+.packaging-account {
+  display: flex;
+  min-height: 66px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 15px 5px 10px;
+  border: 2px solid #a8792d;
+  border-radius: 12px;
+  color: #211d1a;
+  font: 400 clamp(17px, 1.45vw, 25px) var(--body);
+}
+.packaging-account-avatar { display: grid; width: 46px; height: 46px; place-items: center; }
+.packaging-account-avatar svg { width: 44px; height: 44px; }
+.packaging-account button {
+  margin-left: 8px;
+  padding: 5px 0 5px 10px;
+  border: 0;
+  border-left: 1px solid #b9a17c;
+  color: #65543a;
+  background: transparent;
+  cursor: pointer;
+  font: 13px var(--body);
+}
+.packaging-mockup-page {
+  width: min(100% - 36px, 1330px);
+  margin: 0 auto;
+  padding: clamp(45px, 5vw, 82px) 0 60px;
+}
+.packaging-mockup-page > h1 {
+  margin: 0 0 26px;
+  color: #211d1a;
+  text-align: center;
+  font: 400 clamp(27px, 2.8vw, 45px)/1.2 var(--display);
+  letter-spacing: .005em;
+}
+.packaging-table-panel {
+  padding: 13px 12px 20px;
+  border: 1.5px solid #cdbb9d;
+  border-radius: 14px;
+  background: rgba(255, 249, 235, .18);
+}
+.packaging-table-toolbar {
+  position: relative;
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+}
+.packaging-count {
+  margin: 0;
+  color: #27221c;
+  text-align: center;
+  font-size: clamp(17px, 1.55vw, 25px);
+}
+.packaging-switch-view {
+  position: absolute;
+  right: 5px;
+  padding: 5px 8px;
+  border: 0;
+  color: #655c49;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.packaging-table-scroll { overflow-x: auto; }
+.packaging-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+}
+.packaging-table th {
+  padding: 13px 10px 9px;
+  border-bottom: 2px solid #cdbb9d;
+  color: #211d1a;
+  font-size: clamp(19px, 1.8vw, 30px);
+  font-weight: 600;
+}
+.packaging-table td {
+  height: 74px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #d9cbb4;
+  color: #211d1a;
+  font-size: clamp(19px, 1.7vw, 28px);
+}
+.packaging-table tbody tr:nth-child(even) { background: rgba(221, 199, 163, .34); }
+.packaging-table tbody tr:last-child td { border-bottom: 0; }
+.packaging-table th:nth-child(1), .packaging-table td:nth-child(1) { width: 22%; }
+.packaging-table th:nth-child(2), .packaging-table td:nth-child(2) { width: 30%; }
+.packaging-table th:nth-child(3), .packaging-table td:nth-child(3) { width: 20%; }
+.packaging-table th:nth-child(4), .packaging-table td:nth-child(4) { width: 28%; }
+.packaging-view-button {
+  min-width: 172px;
+  min-height: 50px;
+  padding: 7px 20px;
+  border: 1px solid #626b45;
+  border-radius: 13px;
+  color: #fffaf0;
+  background: #77845a;
+  cursor: pointer;
+  font: 400 clamp(18px, 1.45vw, 24px) var(--body);
+  transition: background .15s ease;
+}
+.packaging-view-button:hover { background: #626f48; }
+.packaging-table-message {
+  padding: 38px 16px;
+  color: #5e5545;
+  text-align: center;
+  font-size: 18px;
+}
+.packaging-mockup-shell .packaging-detail {
+  max-width: 900px;
+  margin: 24px auto 0;
+  border: 1px solid #d4c3a7;
+  background: #fffaf0;
+}
+.packaging-mockup-shell .packaging-close-detail {
+  padding: 7px 13px;
+  border: 1px solid #8c806b;
+  border-radius: 8px;
+  color: #4e4b37;
+  background: transparent;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .packaging-mockup-shell .packaging-mockup-header { min-height: 78px; padding: 9px 13px; }
+  .packaging-mockup-shell .customer-brand-mark { width: 46px; height: 46px; flex-basis: 46px; }
+  .packaging-mockup-shell .customer-brand strong { font-size: 20px; }
+  .packaging-mockup-shell .customer-brand small { font-size: 10px; }
+  .packaging-account { min-height: 45px; gap: 5px; padding: 4px 8px; font-size: 13px; }
+  .packaging-account-avatar, .packaging-account-avatar svg { width: 30px; height: 30px; }
+  .packaging-account button { margin-left: 3px; padding-left: 6px; font-size: 11px; }
+  .packaging-mockup-page { width: min(100% - 24px, 1330px); padding-top: 38px; }
+  .packaging-mockup-page > h1 { font-size: clamp(22px, 5vw, 30px); }
+  .packaging-table-panel { padding: 9px 7px 12px; }
+  .packaging-table-toolbar { min-height: 54px; flex-direction: column; gap: 4px; }
+  .packaging-switch-view { position: static; font-size: 11px; }
+  .packaging-table { min-width: 620px; }
+  .packaging-table th { font-size: 17px; }
+  .packaging-table td { height: 62px; font-size: 17px; }
+  .packaging-view-button { min-width: 125px; min-height: 42px; font-size: 17px; }
+}
