@@ -10,8 +10,8 @@ PROCESSING_NETWORK_RULES: list[dict[str, Any]] = [
 ]
 
 NOTIFICATION_METHOD: dict[PaymentStatus, str] = {
-    PaymentStatus.FAILED: 'notify_failed_payment',
-    PaymentStatus.SUCCEDED: "notify_successful_payment"
+    PaymentStatus.CANCELED: 'notify_failed_payment',
+    PaymentStatus.SUCCEEDED: "notify_successful_payment"
 }
 
 # NOTE: In test mode predefined Stripe tokens are used.
