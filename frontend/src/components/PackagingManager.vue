@@ -16,7 +16,12 @@ const displayName = [props.user.first_name, props.user.first_surname].filter(Boo
 const items = computed(() => Array.isArray(selected.value?.items) ? selected.value.items : [])
 const itemKey = (item, index) => item.product_id ?? item.id ?? index
 const allItemsPacked = computed(() => items.value.length > 0 && items.value.every((item, index) => packedItemIds.value.includes(itemKey(item, index))))
-const money = value => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(value || 0))
+const unitLabels = { kilogram: 'kg', gram: 'g', pound: 'lb', unit: 'ud' }
+const quantityLabel = item => {
+  const quantity = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 3 }).format(Number(item.quantity || 0))
+  const unit = unitLabels[item.unit_of_measure] || item.unit || ''
+  return [quantity, unit].filter(Boolean).join(' ')
+}
 const dateLabel = value => {
   const date = new Date(value)
   const parts = new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }).formatToParts(date)
@@ -156,7 +161,7 @@ onMounted(loadOrders)
                 >
               </td>
               <td>{{ item.product_name }}</td>
-              <td>{{ item.quantity }} {{ item.unit || '' }}</td>
+              <td>{{ quantityLabel(item) }}</td>
             </tr>
             <tr v-if="items.length === 0"><td colspan="3" class="packaging-checklist-empty">Este pedido no contiene artículos para preparar.</td></tr>
           </tbody>
