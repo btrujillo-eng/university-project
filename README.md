@@ -74,12 +74,67 @@ Instala las dependencias:
 python -m pip install -r requirements-prod.txt -r requirements-dev.txt
 ```
 
-### 4. Crear las tablas e iniciar el backend
+### 4. Crear las tablas, cargar los datos iniciales e iniciar el backend
 
-Asegúrate de que PostgreSQL esté encendido y que `backend/.env` tenga los datos correctos. Desde la carpeta `backend/`, ejecuta:
+Asegúrate de que PostgreSQL esté encendido, que la base de datos ya exista y que `backend/.env` tenga los datos correctos. Hay **dos formas de crear las tablas**. Escoge solo una:
+
+#### Opción A: utilizar Alembic (recomendado)
+
+Alembic crea o actualiza la estructura de la base de datos a partir de las migraciones del proyecto. Desde la carpeta `backend/`, ejecuta:
 
 ```bash
 alembic upgrade head
+```
+
+Este comando crea las tablas, columnas, índices y demás objetos definidos en las migraciones. **No ejecutes después `create_db.sql` sobre esa misma base de datos:** ese archivo elimina las tablas existentes antes de crearlas.
+
+Las cuentas y secciones iniciales que aparecen en la sección de datos semilla de `create_db.sql` no se cargan al ejecutar las migraciones. Si eliges Alembic, tendrás que crear los usuarios de prueba y los datos iniciales que necesites por separado.
+
+#### Opción B: ejecutar `create_db.sql` (creación manual)
+
+En la raíz del repositorio se encuentra el archivo `create_db.sql`. Este contiene las sentencias SQL para crear los tipos, tablas, índices y también insertar las secciones y los usuarios de prueba.
+
+Puedes copiarlo directamente a tu directorio personal (`home` en Linux), donde normalmente trabajas con tus archivos:
+
+```bash
+cp create_db.sql ~/create_db.sql
+```
+
+Luego ejecuta el archivo completo desde la terminal con `psql`. Por ejemplo, si el usuario de PostgreSQL es `app_user`, la base de datos se llama `ecommerce_db` y PostgreSQL está en `127.0.0.1`:
+
+```bash
+psql -U app_user -d ecommerce_db -h 127.0.0.1 -f ~/create_db.sql
+```
+
+También puedes ejecutarlo mediante la entrada estándar:
+
+```bash
+psql -U app_user -d ecommerce_db -h 127.0.0.1 < ~/create_db.sql
+```
+
+Sustituye `app_user` y `ecommerce_db` por el usuario y el nombre de la base de datos que configuraste. Si guardaste el archivo en otra ubicación, ajusta la ruta. PostgreSQL puede solicitarte la contraseña del usuario.
+
+**Advertencia:** `create_db.sql` es un script destructivo: elimina las tablas y tipos existentes antes de crearlos de nuevo. Úsalo únicamente en una base de datos local vacía o que puedas borrar por completo. No lo ejecutes sobre una base con información que quieras conservar ni después de haber aplicado las migraciones de Alembic.
+
+#### Datos semilla incluidos en `create_db.sql`
+
+El script inserta las secciones iniciales del catálogo y cinco cuentas de prueba, una por cada rol:
+
+| Rol | Correo |
+|---|---|
+| Administrador de tienda (`store_manager`) | `admin.tienda@canasta.com` |
+| Administrador de bodega (`warehouse_manager`) | `bodega@canasta.com` |
+| Encargado de empaque (`packaging_manager`) | `empaque@canasta.com` |
+| Domiciliario (`courier`) | `courier@canasta.com` |
+| Cliente (`customer`) | `cliente@canasta.com` |
+
+La contraseña de todas estas cuentas de prueba es `usuario123*`. El script almacena el hash bcrypt, no la contraseña en texto plano. Estas cuentas son únicamente para desarrollo local; cambia o elimina estas credenciales antes de cualquier despliegue.
+
+#### Iniciar el backend
+
+Después de crear las tablas con **una** de las dos opciones anteriores, desde la carpeta `backend/` inicia la API:
+
+```bash
 uvicorn main:app --reload
 ```
 
@@ -226,31 +281,6 @@ Utiliza estas tarjetas exclusivamente con las claves de prueba de Stripe (`sk_te
 | Requiere autenticación 3D Secure | `4000 0025 0000 3155` | Cualquier 3 dígitos, por ejemplo `123` | Cualquier fecha futura |
 
 Para estas tarjetas Visa se utiliza un CVC de tres dígitos. En las pruebas, Stripe acepta cualquier fecha futura y cualquier CVC válido para la marca. Para American Express el CVC tiene cuatro dígitos. Consulta la [documentación oficial de Stripe sobre pruebas](https://docs.stripe.com/testing) para más escenarios y marcas de tarjeta.
-
-### Datos semilla: usuarios de prueba
-
-Los datos semilla que se prepararán para la entrega se limitarán a la tabla `users`: habrá una cuenta por cada rol del sistema (`customer`, `store_manager`, `warehouse_manager`, `packaging_manager` y `courier`). No se insertarán productos, secciones, carritos, pedidos ni otros datos de negocio.
-
-La contraseña se almacenará en la columna de hash usando bcrypt, con un coste compatible con el configurado en el backend. Para que el equipo receptor pueda realizar pruebas manuales, el script SQL incluirá la contraseña en texto plano como comentario inmediatamente antes del registro correspondiente. Por ejemplo:
-
-```sql
--- Texto plano: Cliente123*
-INSERT INTO users (
-    id, first_name, middle_name, first_surname, middle_surname,
-    email, password_hash, role, is_active
-) VALUES (
-    5, 'Maria', 'Elena', 'Torres', 'Castro',
-    'cliente@canasta.com',
-    '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW',
-    'customer',
-    true
-);
-```
-
-### IMPORTANTE:
-Los hashes incluidos en el archivo create_db.sql serán reales y válidos para iniciar sesión. Cada uno se generará a partir de la contraseña correspondiente utilizando el mismo algoritmo, hasher y configuración que emplea el backend. Por tanto, cada contraseña indicada en los comentarios SQL corresponderá exactamente al hash almacenado para ese usuario.
-
-La contraseña en texto plano aparecerá únicamente como comentario para facilitar las pruebas; nunca se insertará como valor en la base de datos.
 
 ### Credenciales de servicios externos para el equipo receptor
 
