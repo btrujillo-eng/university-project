@@ -571,22 +571,28 @@ onBeforeUnmount(() => {
       <div class="customer-page-actions"><button type="button" class="customer-history-link" @click="returnToHistory">← Volver al Historial de Pedidos</button></div>
       <h1 class="customer-page-title">Detalles de mi Pedido ({{ selectedOrder.id }})</h1>
       <div class="order-detail-grid">
-        <article class="order-detail-panel">
+        <article class="order-detail-panel order-information-panel">
           <h2>Información del Pedido</h2>
-          <p>Estado de Entrega:</p><span class="order-status detail-status" :class="statusClass(selectedOrder.delivery_status)">{{ statusLabel(selectedOrder.delivery_status) }}</span>
-          <p>Fecha de Compra: {{ dateLabel(selectedOrder.created_at) }}</p>
-          <p>Método de Pago: {{ paymentLabel(selectedOrder.payment_method) }}</p>
-          <p>Estado del Pago: {{ selectedOrder.payment_status === 'succeeded' ? 'Pagado' : selectedOrder.payment_status === 'pending' ? 'Pendiente' : 'Fallido' }}</p>
-          <p>Dirección: {{ selectedOrder.shipping_street }}, {{ selectedOrder.shipping_neighborhood }}, {{ selectedOrder.shipping_city }}</p>
-          <p>Teléfono: {{ selectedOrder.phone_number }}</p>
+          <div class="order-information-row">
+            <span>Estado de Entrega:</span>
+            <span class="order-status detail-status" :class="statusClass(selectedOrder.delivery_status)">{{ statusLabel(selectedOrder.delivery_status) }}</span>
+          </div>
+          <p><span>Fecha de Compra:</span> {{ dateLabel(selectedOrder.created_at) }}</p>
+          <p><span>Método de Envío:</span> Domicilio Express (24h)</p>
         </article>
         <article class="order-detail-panel purchased-items-panel">
           <h2>Artículos Comprados ({{ selectedOrder.items.length }})</h2>
           <div v-for="item in selectedOrder.items" :key="item.product_id" class="purchased-item">
             <img v-if="item.image_path" :src="imageUrl(item.image_path)" :alt="item.product_name" />
             <span v-else class="purchased-placeholder">♧</span>
-            <div><strong>{{ item.product_name }}</strong><small>{{ quantity(item.quantity) }} unidades</small></div>
-            <div class="purchased-price"><strong>{{ money(item.unit_price) }}</strong><small>Subtotal: {{ money(Number(item.unit_price) * Number(item.quantity)) }}</small></div>
+            <div class="purchased-item-description">
+              <strong>{{ item.product_name }}</strong>
+              <small>x{{ quantity(item.quantity) }}</small>
+            </div>
+            <div class="purchased-price">
+              <strong>{{ money(item.unit_price) }}</strong>
+              <small>Subtotal: {{ money(Number(item.unit_price) * Number(item.quantity)) }}</small>
+            </div>
           </div>
         </article>
         <article class="order-detail-panel cost-detail-panel">
