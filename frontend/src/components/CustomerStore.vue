@@ -83,7 +83,12 @@ function receiptDateLabel(value) {
   return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value))
 }
 function receiptDateTimeLabel(value) {
-  return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value))
+  const parts = new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(value))
+  const part = (type) => parts.find((entry) => entry.type === type)?.value || ''
+  return `${part('day')}/${part('month')}/${part('year')} ${part('hour')}:${part('minute')}`
 }
 function statusLabel(value) {
   return ({
