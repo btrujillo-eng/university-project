@@ -2767,3 +2767,30 @@ input, button, select, textarea { font-family: var(--body); }
     height: 54px;
   }
 }
+
+
+/* Desktop order detail: keep all three mockup panels in one row.
+   The earlier tablet breakpoint was activating at common browser zoom levels
+   and moving the cost summary beneath the first two panels. */
+@media (min-width: 721px) {
+  .order-detail-page .order-detail-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: start;
+  }
+  .order-detail-page .cost-detail-panel {
+    grid-column: auto !important;
+  }
+}
+
+.order-detail-page .order-detail-panel {
+  box-sizing: border-box;
+  padding: 14px 13px;
+}
+.order-detail-page .purchased-item {
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+}
+.order-detail-page .purchased-item > img,
+.order-detail-page .purchased-item > .purchased-placeholder {
+  width: 58px;
+  height: 58px;
+}
