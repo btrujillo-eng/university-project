@@ -143,6 +143,22 @@ onMounted(loadOrders)
     <div v-if="selected" class="courier-modal-backdrop" @click.self="closeDetails" @keydown.esc="closeDetails">
       <section class="courier-modal" role="dialog" aria-modal="true" :aria-label="'Información del pedido ' + selected.id">
         <button class="courier-modal-close" aria-label="Cerrar" @click="closeDetails">×</button>
+        <template v-if="modalMode === 'info'">
+          <h2 class="courier-info-modal-title">Detalles de Domicilio - Pedido {{ selected.id }}</h2>
+          <div class="courier-info-modal-content">
+            <p class="courier-info-address"><strong>Dirección:</strong> {{ [selected.shipping_street, selected.shipping_neighborhood, selected.shipping_city, selected.shipping_department].filter(Boolean).join(', ') || 'No disponible' }}</p>
+            <p class="courier-info-reference"><strong>Referencia:</strong> {{ selected.shipping_details || 'Sin referencia adicional' }}</p>
+            <div class="courier-info-contact">
+              <p><strong>Cliente:</strong><span>{{ selected.customer_name || 'No disponible' }}</span></p>
+              <p><strong>Teléfono:</strong><span>{{ selected.phone_number || 'No disponible' }}</span></p>
+            </div>
+            <p class="courier-info-amount"><strong>Valor a cobrar:</strong> {{ money(selected.total_price) }}</p>
+          </div>
+          <button class="courier-info-return" @click="closeDetails">
+            <span>Cerrar Detalles y Volver al Panel</span><span aria-hidden="true">→</span>
+          </button>
+        </template>
+        <template v-else>
         <p class="operations-kicker">DETALLE DEL DOMICILIO</p>
         <h2>Pedido #{{ selected.id }}</h2>
         <div class="courier-modal-meta">
@@ -171,6 +187,8 @@ onMounted(loadOrders)
           </button>
         </div>
         <p v-if="error && selected" class="operations-alert error">{{ error }}</p>
+
+        </template>
       </section>
     </div>
   </main>
@@ -206,6 +224,59 @@ onMounted(loadOrders)
 .courier-payment-line { margin-top:3px; }
 .courier-info-button { align-self:stretch; min-height:100%; margin:0; border:1px solid #41442e; background:#77795b; }
 .courier-payment-line { margin-top:3px; }
+.courier-modal:has(.courier-info-modal-title) {
+  width: min(550px, 100%);
+  max-height: min(90vh, 900px);
+  padding: 48px 22px 20px;
+  border-radius: 20px;
+  background: #f2dfb5;
+}
+.courier-info-modal-title {
+  margin: 0 18px 28px 0 !important;
+  color: #211b16 !important;
+  text-align: center;
+  font: 400 clamp(21px, 1.8vw, 29px)/1.25 var(--display) !important;
+}
+.courier-info-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0 14px;
+  color: #211b16;
+  font-size: clamp(17px, 1.65vw, 25px);
+  line-height: 1.3;
+}
+.courier-info-modal-content p { margin: 0; overflow-wrap: anywhere; }
+.courier-info-modal-content strong { font-weight: 700; }
+.courier-info-address,.courier-info-reference { padding-left: 38px; text-indent: -0px; }
+.courier-info-contact { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:4px; }
+.courier-info-contact p { display:flex; flex-direction:column; gap:3px; }
+.courier-info-amount { margin-top:2px !important; text-align:center; font-size:1.12em; font-weight:600; }
+.courier-info-return {
+  display:flex;
+  width:100%;
+  min-height:54px;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:38px;
+  padding:10px 17px 10px 25px;
+  border:1px solid #41442e;
+  border-radius:12px;
+  color:#fff8e9;
+  background:#55583d;
+  cursor:pointer;
+  font:500 clamp(16px, 1.4vw, 22px) var(--body);
+}
+.courier-info-return:hover { background:#41442e; }
+.courier-info-return span:last-child { font-size:1.35em; }
+@media(max-width:560px) {
+  .courier-modal:has(.courier-info-modal-title) { padding:44px 17px 17px; }
+  .courier-info-modal-content { gap:18px; padding:0 4px; font-size:17px; }
+  .courier-info-address,.courier-info-reference { padding-left:0; }
+  .courier-info-contact { gap:10px; }
+  .courier-info-return { margin-top:26px; padding-inline:14px; font-size:15px; }
+}
 .courier-modal-backdrop { position:fixed; z-index:50; inset:0; display:grid; place-items:center; overflow-y:auto; padding:22px; background:#211a13a8; backdrop-filter:blur(3px); }
 .courier-modal { position:relative; width:min(760px,100%); max-height:min(90vh,900px); overflow-y:auto; padding:28px; border:1px solid #d6bd94; border-radius:20px; color:#292318; background:#fff8eb; box-shadow:0 18px 55px #21170f55; }
 .courier-modal-close { position:absolute; top:18px; right:18px; width:38px; height:38px; border:1px solid #cbb997; border-radius:50%; color:#292318; background:#f3e5c9; cursor:pointer; font-size:25px; line-height:1; }
