@@ -28,6 +28,7 @@ const deliveryLabel = value => ({
 }[value] || value || 'Sin estado')
 const paymentLabel = value => ({ pending: 'Pendiente', succeeded: 'Pagado', failed: 'Fallido', refunded: 'Reembolsado' }[value] || value || 'Sin estado')
 const paymentMethodLabel = value => ({ cash: 'Efectivo', card: 'Tarjeta' }[value] || value || 'No especificado')
+const amountToCollect = order => order?.payment_status === 'succeeded' ? 0 : Number(order?.total_price || 0)
 
 async function loadOrders() {
   loading.value = true
@@ -152,7 +153,7 @@ onMounted(loadOrders)
               <p><strong>Cliente:</strong><span>{{ selected.customer_name || 'No disponible' }}</span></p>
               <p><strong>Teléfono:</strong><span>{{ selected.phone_number || 'No disponible' }}</span></p>
             </div>
-            <p class="courier-info-amount"><strong>Valor a cobrar:</strong> {{ money(selected.total_price) }}</p>
+            <p class="courier-info-amount"><strong>Valor a cobrar:</strong> {{ money(amountToCollect(selected)) }}</p>
           </div>
           <button class="courier-info-return" @click="closeDetails">
             <span>Cerrar Detalles y Volver al Panel</span><span aria-hidden="true">→</span>
