@@ -2239,3 +2239,40 @@ input, button, select, textarea { font-family: var(--body); }
     width: min(100%, 337px);
   }
 }
+
+
+/* Final sizing corrections: match the ticket proportions in the reference mockup. */
+.customer-confirmation-mode .confirmation-page {
+  margin-top: -31px;
+  padding-top: 0;
+}
+.customer-confirmation-mode .receipt-page-heading {
+  min-height: 71px;
+}
+.customer-confirmation-mode .digital-receipt {
+  box-sizing: border-box;
+  width: min(100%, 337px);
+  padding: 18px 18px 16px;
+}
+.customer-confirmation-mode .receipt-ticket-brand div strong {
+  font-size: 23px;
+}
+.customer-confirmation-mode .receipt-ticket-header > p {
+  line-height: 1.15;
+}
+.customer-confirmation-mode .receipt-customer-data {
+  margin-bottom: 8px;
+}
+.customer-confirmation-mode .receipt-item-head,
+.customer-confirmation-mode .receipt-item-row {
+  grid-template-columns: 32px minmax(0, 1fr) 66px 49px;
+  gap: 3px;
+}
+@media (max-width: 560px) {
+  .customer-confirmation-mode .confirmation-page {
+    margin-top: 0;
+  }
+  .customer-confirmation-mode .receipt-page-heading {
+    min-height: 100px;
+  }
+}
