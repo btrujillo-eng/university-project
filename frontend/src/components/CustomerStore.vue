@@ -82,7 +82,10 @@ function dateLabel(value) {
 function receiptDateLabel(value) {
   return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value))
 }
-function receiptDateTimeLabel(value) {\n  return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value))\n}\nfunction statusLabel(value) {
+function receiptDateTimeLabel(value) {
+  return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value))
+}
+function statusLabel(value) {
   return ({
     pending: 'Pendiente',
     packaged: 'Empacado',
