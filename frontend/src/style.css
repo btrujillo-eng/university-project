@@ -3122,3 +3122,129 @@ input, button, select, textarea { font-family: var(--body); }
   .packaging-dialog-footer { align-items: stretch; flex-direction: column; }
   .packaging-dialog-footer .operations-primary { width: 100%; min-width: 0; }
 }
+
+
+/* Packaging checklist detail — layout aligned with the supplied packing mockup. */
+.packaging-order-detail-page {
+  width: min(100% - 48px, 1420px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 58px) 0 54px;
+  text-align: center;
+}
+.packaging-order-detail-page > h1 {
+  margin: 0 0 26px;
+  color: #211d1a;
+  font: 400 clamp(28px, 3vw, 48px)/1.2 var(--display);
+  letter-spacing: .01em;
+}
+.packaging-back-button {
+  display: block;
+  margin: 0 0 16px auto;
+  padding: 8px 14px;
+  border: 1px solid #bfae90;
+  border-radius: 8px;
+  color: #3e4930;
+  background: #f7ecd7;
+  cursor: pointer;
+  font: 16px var(--body);
+}
+.packaging-checklist-panel {
+  overflow-x: auto;
+  padding: 8px 14px 14px;
+  border: 1.5px solid #cdbb9d;
+  border-radius: 15px;
+  background: rgba(255, 249, 235, .18);
+}
+.packaging-checklist {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: center;
+}
+.packaging-checklist th {
+  padding: 0 16px 12px;
+  border-bottom: 2px solid #cdbb9d;
+  color: #211d1a;
+  font-size: clamp(23px, 2.5vw, 42px);
+  font-weight: 700;
+}
+.packaging-checklist td {
+  height: 72px;
+  padding: 8px 16px;
+  color: #211d1a;
+  font-size: clamp(20px, 2vw, 34px);
+}
+.packaging-checklist tbody tr {
+  transition: background .12s ease;
+}
+.packaging-checklist tbody tr.is-packed {
+  background: rgba(221, 199, 163, .48);
+}
+.packaging-check-column {
+  width: 25%;
+}
+.packaging-checklist th:nth-child(2),
+.packaging-checklist td:nth-child(2) { width: 48%; }
+.packaging-checklist th:nth-child(3),
+.packaging-checklist td:nth-child(3) { width: 27%; }
+.packaging-check-heading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+.packaging-checklist input[type="checkbox"] {
+  width: clamp(24px, 2.2vw, 34px);
+  height: clamp(24px, 2.2vw, 34px);
+  margin: 0;
+  accent-color: #77845a;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.packaging-checklist input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+.packaging-checklist-empty {
+  color: #706653 !important;
+  font-size: 18px !important;
+}
+.packaging-checklist-error {
+  max-width: 900px;
+  margin: 18px auto 0;
+}
+.packaging-confirm-button {
+  min-height: 62px;
+  margin: 26px auto 0;
+  padding: 10px 30px;
+  border: 1px solid #626b45;
+  border-radius: 13px;
+  color: #fffaf0;
+  background: #77845a;
+  cursor: pointer;
+  font: 400 clamp(20px, 1.8vw, 30px) var(--body);
+  transition: background .15s ease, opacity .15s ease;
+}
+.packaging-confirm-button:hover:not(:disabled) { background: #626f48; }
+.packaging-confirm-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+@media (max-width: 700px) {
+  .packaging-order-detail-page {
+    width: min(100% - 24px, 1420px);
+    padding-top: 28px;
+  }
+  .packaging-order-detail-page > h1 { font-size: 25px; }
+  .packaging-checklist-panel { padding: 8px; }
+  .packaging-checklist th { font-size: 19px; }
+  .packaging-checklist td { height: 58px; font-size: 18px; }
+  .packaging-checklist input[type="checkbox"] { width: 23px; height: 23px; }
+  .packaging-confirm-button {
+    width: 100%;
+    min-height: 52px;
+    padding: 9px 12px;
+    font-size: 19px;
+  }
+}
