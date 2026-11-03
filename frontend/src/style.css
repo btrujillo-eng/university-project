@@ -2276,3 +2276,18 @@ input, button, select, textarea { font-family: var(--body); }
     min-height: 100px;
   }
 }
+
+
+/* Receipt summary alignment and fixed free-shipping line to match the ticket mockup. */
+.customer-confirmation-mode .receipt-summary {
+  align-items: flex-end;
+}
+.customer-confirmation-mode .receipt-summary > .receipt-summary-line {
+  width: max-content;
+  justify-content: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+.customer-confirmation-mode .receipt-summary-line span {
+  text-align: right;
+}
