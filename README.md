@@ -2,6 +2,71 @@
 
 Backend REST para la tienda de legumbrería Canasta Express. Está construido con FastAPI, Pydantic, SQLAlchemy asíncrono y PostgreSQL.
 
+## Arquitectura: componentes y capas
+
+Canasta Express está organizado en capas para separar la entrada HTTP, los casos de uso, las reglas del negocio y los detalles técnicos. El siguiente diagrama muestra cómo se conectan sus componentes principales.
+
+```mermaid
+flowchart TB
+    subgraph Cliente["Cliente"]
+        UI["Frontend Vue.js"]
+    end
+
+    subgraph API["Backend · Presentación"]
+        ROUTERS["FastAPI · Routers v1\nAutenticación · Productos\nCarrito · Pedidos · Pagos"]
+        SCHEMAS["Schemas Pydantic"]
+        DEPS["Dependencias\nAutenticación y autorización"]
+    end
+
+    subgraph APP["Aplicación"]
+        USECASES["Casos de uso\nAutenticación · Registro\nCheckout y pagos · Recuperación"]
+    end
+
+    subgraph DOMAIN["Dominio"]
+        ENTITIES["Entidades y reglas\nOrder · Payment · Estados"]
+        PORTS["Puertos / contratos\nRepositorios · Unit of Work\nPagos · Notificaciones"]
+    end
+
+    subgraph INFRA["Infraestructura"]
+        PERSIST["Persistencia\nSQLAlchemy · Repositorios\nUnit of Work · Modelos ORM"]
+        PAY["Pasarelas de pago\nStripe · Efectivo"]
+        NOTIFY["Notificaciones\nResend · Outbox · Worker"]
+    end
+
+    DB[("PostgreSQL")]
+    STRIPE["Stripe API"]
+    RESEND["Resend API"]
+
+    UI --> ROUTERS
+    ROUTERS --> SCHEMAS
+    ROUTERS --> DEPS
+    ROUTERS --> USECASES
+    USECASES --> ENTITIES
+    USECASES --> PORTS
+    PERSIST -. "implementa" .-> PORTS
+    PAY -. "implementa" .-> PORTS
+    NOTIFY -. "implementa" .-> PORTS
+    PERSIST --> DB
+    PAY --> STRIPE
+    NOTIFY --> DB
+    NOTIFY --> RESEND
+```
+
+### ¿Qué hace cada capa?
+
+| Capa | Responsabilidad | Ubicación principal |
+|---|---|---|
+| Frontend | Presenta las pantallas y consume la API REST. | `frontend/` |
+| Presentación | Recibe peticiones HTTP, valida entradas/salidas y aplica dependencias de autenticación y permisos. | `backend/app/api/` |
+| Aplicación | Coordina los pasos necesarios para completar una operación. | `backend/app/application/use_cases/` |
+| Dominio | Contiene conceptos, reglas del negocio y contratos que necesita la aplicación. | `backend/app/domain/` |
+| Infraestructura | Implementa los contratos con tecnologías concretas: base de datos, pasarelas de pago y correo. | `backend/app/infrastructure/` |
+
+**Cómo leer el flujo:** el frontend envía una petición a un router de FastAPI. El router valida la solicitud y delega la operación; la capa de aplicación coordina el caso de uso y utiliza las reglas y contratos del dominio. La infraestructura proporciona las implementaciones concretas para guardar datos o comunicarse con servicios externos.
+
+El dominio define los contratos y la infraestructura los implementa. De esta manera, las reglas del negocio no dependen directamente de SQLAlchemy, PostgreSQL, Stripe o Resend.
+
+
 ## Requisitos
 
 Antes de iniciar, instala:
